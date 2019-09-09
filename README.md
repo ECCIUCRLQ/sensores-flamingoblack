@@ -9,6 +9,8 @@
 * Filip
 
 Este proyecto consiste en construir un sistema operativo capaz de almacenar de forma distribuida información recopilada por sensores. Además, va a constar de cuatro fases, las cuales tendrán objetivos y metas específicas.
+## Nombre del equipo 
+FlamingoBlack
 
 ## Fase actual
 
