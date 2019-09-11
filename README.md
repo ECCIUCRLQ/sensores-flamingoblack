@@ -14,15 +14,12 @@ FlamingoBlack
 
 ## Fase actual
 
-### Fase 0: Descubrir la arquitectura del sistema operativo
+### Fase 1: Comunicación entre procesos
 
-El objetivo de esta primera fase es que cada grupo descubra el sistema operativo Raspbian. A continuación, se presentan cinco preguntas concretas:
+Una vez que cada equipo se hafamiliarizado con el sistema operativo, deberán conectarse los sensores proporcionados al Raspberry Pi con el objetivo de obtener datos.
 
-¿Cómo habría que modificar el código fuente del kernel para que:
+En esta fase cada equipo tomará los datos generados por los sensores y los enviará a un proceso recolector que se estará ejecutando en un dispositivo diferente(otro Raspberry Pi). Para ello todos los equipos deberán diseñar e implementar un mismo protocolo. En la siguiente figura los sensores están conectados a un dispositivo que se comunica a otro dispositivo que está ejecutando un proceso recolector.
 
-* El llamado a fork() cree dos procesos hijos en vez de uno solo?
-* Los mensajes UDP no contengan checksum?
-* Se modifique el tamaño de las páginas de memoria.
-* Se carguela información de los volúmenes(discos)de la máquina?
-* El sistema operativo se de cuenta si un usuario tiene permisos de ejecución para un archivo?
-* Se pueda cambiar elencabezado TCP y el IP en el envío de mensajes?
+Al final de esta fase se espera que sin importar el sensor que se esté usando, el proceso recolector de cada equipo deberá ser compatible con todos los sensores.
+
+Se realizará una demo al final de la fase, donde cada equipo debe presentarel funcionamiento de su implementación(incluyendo la posibilidad de conectar sensores de un equipo A al recolector de un equipo B).La presentación será en horas de clase el martes 17de septiembre. 
