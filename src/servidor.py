@@ -4,7 +4,7 @@ import struct
 import time
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 10000
+UDP_PORT = 1000
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 sock.bind((UDP_IP, UDP_PORT))
@@ -14,7 +14,8 @@ sensor_grupo = {
 	2:'FlamingoBlack',
 	3:'GISSO',
 	4:'KOF',
-	5:'EQUIPO 404'
+	5:'EQUIPO 404',
+	6:'POFFIS'
 }
 
 tipo_sensor = {
@@ -48,9 +49,9 @@ def separarDatos(datos):
 
 	evento = datos[7]
 	if evento:
-		print("Hubo evento")
+		print("Hubo evento:", evento)
 	else:
-		print("No hubo evento")
+		print("No hubo evento:", evento)
 
 	print("-"*30)
 
@@ -58,8 +59,8 @@ def separarDatos(datos):
 while True:
 
     data_packed, address = sock.recvfrom(1024)
-    data_unpacked = struct.unpack('Hibbbbbb', data_packed)
+    data_unpacked = struct.unpack('Bibbbbbf', data_packed)
     separarDatos(data_unpacked)
 
-    answer_package = struct.pack('Hbbbb', data_unpacked[0], data_unpacked[2], data_unpacked[3], data_unpacked[4], data_unpacked[5])
+    answer_package = struct.pack('Bbbbb', data_unpacked[0], data_unpacked[2], data_unpacked[3], data_unpacked[4], data_unpacked[5])
     sock.sendto(answer_package, address)

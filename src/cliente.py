@@ -4,14 +4,14 @@ import struct
 import random
 import time
 
-UDP_IP = "10.1.137.102"
-UDP_PORT = 10000
+UDP_IP = "127.0.0.1"
+UDP_PORT = 1000
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def randomGenerator():
 
-	my_random = random.randint(0, 65535)
+	my_random = random.randint(0, 255)
 	return my_random
 
 class protocoloComun:
@@ -20,17 +20,17 @@ class protocoloComun:
 	date = int(time.time())
 	sensor_id = bytearray([0x01, 0x00, 0x00, 0x02])
 	sensor_type = 0x01
-	data = 0x00
+	data = 1.4878
 
 my_protocol = protocoloComun()
-sending_package = struct.pack('Hibbbbbb', my_protocol.random_id, my_protocol.date, my_protocol.sensor_id[0],
+sending_package = struct.pack('Bibbbbbf', my_protocol.random_id, my_protocol.date, my_protocol.sensor_id[0],
 						my_protocol.sensor_id[1], my_protocol.sensor_id[2], my_protocol.sensor_id[3],
 						my_protocol.sensor_type, my_protocol.data)
 
 sock.sendto(sending_package, (UDP_IP, UDP_PORT))
 
 data_packed, address = sock.recvfrom(1024)
-data_unpacked = struct.unpack('Hbbbb', data_packed)
+data_unpacked = struct.unpack('Bbbbb', data_packed)
 
 if data_unpacked[0] == my_protocol.random_id:
 	print("-"*30)
