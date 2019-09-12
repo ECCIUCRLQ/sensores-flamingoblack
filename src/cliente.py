@@ -4,7 +4,7 @@ import struct
 import random
 import time
 
-UDP_IP = "127.0.0.1"
+UDP_IP = "10.1.137.102"
 UDP_PORT = 10000
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
