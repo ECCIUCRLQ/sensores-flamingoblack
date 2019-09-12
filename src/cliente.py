@@ -3,11 +3,13 @@ import sys
 import struct
 import random
 import time
+import select
 
-UDP_IP = "10.1.137.17"
+UDP_IP = "127.0.0.1"
 UDP_PORT = 10001
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.settimeout(5)
 
 def randomGenerator():
 
@@ -27,10 +29,21 @@ sending_package = struct.pack('BIBBBBBf', my_protocol.random_id, my_protocol.dat
 				my_protocol.sensor_id[1], my_protocol.sensor_id[2], my_protocol.sensor_id[3],
 				my_protocol.sensor_type, my_protocol.data)
 
-sock.sendto(sending_package, (UDP_IP, UDP_PORT))
+timeouts = 0
 
-data_packed, address = sock.recvfrom(1024)
-data_unpacked = struct.unpack('BBBBB', data_packed)
+while True:
+	sock.sendto(sending_package, (UDP_IP, UDP_PORT))
+	timeout = select.select([sock], [], [], 5)
+	if timeouts == 3:
+		print("Server not responding.")
+		exit()
+	elif timeout[0]:
+		data_packed, address = sock.recvfrom(1024)
+		data_unpacked = struct.unpack('BBBBB', data_packed)
+		break
+	else:
+		timeouts += 1
+		print("Timeout reached. Sending package again.")
 
 if data_unpacked[0] == my_protocol.random_id:
 	print("-"*30)
