@@ -3,8 +3,8 @@ import sys
 import struct
 import time
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 1000
+UDP_IP = "10.1.137.192"
+UDP_PORT = 10001
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 sock.bind((UDP_IP, UDP_PORT))
@@ -59,8 +59,8 @@ def separarDatos(datos):
 while True:
 
     data_packed, address = sock.recvfrom(1024)
-    data_unpacked = struct.unpack('Bibbbbbf', data_packed)
+    data_unpacked = struct.unpack('BIBBBBBf', data_packed)
     separarDatos(data_unpacked)
 
-    answer_package = struct.pack('Bbbbb', data_unpacked[0], data_unpacked[2], data_unpacked[3], data_unpacked[4], data_unpacked[5])
+    answer_package = struct.pack('BBBBB', data_unpacked[0], data_unpacked[2], data_unpacked[3], data_unpacked[4], data_unpacked[5])
     sock.sendto(answer_package, address)
