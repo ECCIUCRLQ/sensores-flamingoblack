@@ -23,3 +23,6 @@ En esta fase cada equipo tomará los datos generados por los sensores y los envi
 Al final de esta fase se espera que sin importar el sensor que se esté usando, el proceso recolector de cada equipo deberá ser compatible con todos los sensores.
 
 Se realizará una demo al final de la fase, donde cada equipo debe presentarel funcionamiento de su implementación(incluyendo la posibilidad de conectar sensores de un equipo A al recolector de un equipo B).La presentación será en horas de clase el martes 17de septiembre. 
+
+
+![Diagrama General](https://ibb.co/nmXyn88)
