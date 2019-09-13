@@ -1,12 +1,12 @@
 import socket
 import time
 import datetime
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 from ipcqueue import sysvmq as SYSV
 
-GPIO.setmode(GPIO.BCM)
-GPIO_PIR = 7
-GPIO.setup(GPIO_PIR, GPIO.IN)
+#GPIO.setmode(GPIO.BCM)
+#GPIO_PIR = 7
+#GPIO.setup(GPIO_PIR, GPIO.IN)
 
 buzon = SYSV.Queue(63)
 
@@ -14,19 +14,21 @@ buzon = SYSV.Queue(63)
 
 try:
     while True:
-        if GPIO.input(GPIO_PIR):
-            now = datetime.datetime.now()
-            buzon.put([1, now], msg_type=1)
+        if True: #GPIO.input(GPIO_PIR):
+            now = time.time()
+            buzon.put([1, int(now)], msg_type=1)
             #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("Intruder")            
+            print("Intruder" + str(int(now)))
+            print(buzon.get())             
         else:
-            now = datetime.datetime.now()
-            buzon.put([0, now], msg_type=1)
+            now = time.time()
+            buzon.put([0, int(now)], msg_type=1)
             #file.write("Intruder not detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("No intruder")
+            print("No intruder" + str(int(now)))
+            print(buzon.get()) 
         time.sleep(1)
 except KeyboardInterrupt:
     now = datetime.datetime.now()
     #file.write("User exited. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss"))
     #file.close()
-    GPIO.cleanup()
+    #GPIO.cleanup()
