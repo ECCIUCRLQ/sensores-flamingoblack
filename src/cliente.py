@@ -35,15 +35,24 @@ def randomGenerator():
 
 def obtainDateData():
 
-	sensor_data = buzon.get()
+	try:
+		sensor_data = buzon.get_nowait()
+	except:
+		print("Queue is empty")
+		my_pack.data = 0
+		my_pack.date = time.time()
+		my_pack.sensor_id[3] = 0x00
+		my_pack.sensor_type = 0x00
+		my_pack.random_id = randomGenerator()
+		return
 
-	if sensor_data[1] == 0:
+	if sensor_data[1] == 1:
 		my_pack.data = sensor_data[0]
 		my_pack.date = sensor_data[2]
 		my_pack.sensor_id[3] = 0x01
 		my_pack.sensor_type = 0x01
 		my_pack.random_id = randomGenerator()
-	elif sensor_data[1] == 1:
+	elif sensor_data[1] == 2:
 		my_pack.data = sensor_data[0]
 		my_pack.date = sensor_data[2]
 		my_pack.sensor_id[3] = 0x02
