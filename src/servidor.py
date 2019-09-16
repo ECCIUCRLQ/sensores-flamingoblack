@@ -2,32 +2,37 @@ import socket
 import sys
 import struct
 import time
+from ipcqueue import sysvmq as SYSV
 
-UDP_IP = "10.1.137.102"
-UDP_PORT = 10000
+UDP_IP = "127.0.0.1"
+UDP_PORT = 10001
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
 
+buzon = SYSV.Queue(36)
+paquetes_recibidos = []
+
 sensor_grupo = {
-	1:'Whitenoise',
-	2:'FlamingoBlack',
-	3:'GISSO',
-	4:'KOF',
-	5:'EQUIPO 404',
-	6:'POFFIS'
+	1: 'Whitenoise',
+	2: 'FlamingoBlack',
+	3: 'GISSO',
+	4: 'KOF',
+	5: 'EQUIPO 404',
+	6: 'POFFIS'
 }
 
 tipo_sensor = {
-	0:'Keep Alive',
-	1:'Movimiento',
-	2:'Big Sound',
-	3:'Fotoresistor',
-	4:'Shock',
-	5:'Touch',
-	6:'Humedad/Temperatura'
+	0: 'Keep Alive',
+	1: 'Movimiento',
+	2: 'Big Sound',
+	3: 'Fotoresistor',
+	4: 'Shock',
+	5: 'Touch',
+	6: 'Humedad/Temperatura'
 }
 
+"""
 def separarDatos(datos):
 
 	print("-"*30)
@@ -42,7 +47,7 @@ def separarDatos(datos):
 	print("El sensor es del grupo:", sensor_grupo[equipo_sensor])
 
 	seq_sensor = datos[3] + datos[4] + datos[5]
-	print("El número de secuencia del sensor es:", seq_sensor)
+	print("El numero de secuencia del sensor es:", seq_sensor)
 
 	tipo = datos[6]
 	print("El tipo del sensor es:", tipo_sensor[tipo])
@@ -55,7 +60,10 @@ def separarDatos(datos):
 
 	print("-"*30)
 
+"""
+
 def crearPaqueteBuey(random_id,sensor_id):
+
 	sensor_id_data = struct.unpack('BBBB',sensor_id)
 	paquete = struct.pack('BBBBB',random_id,sensor_id_data[0],sensor_id_data[1],sensor_id_data[2],sensor_id_data[3])
 	print("-"*30)
@@ -63,16 +71,48 @@ def crearPaqueteBuey(random_id,sensor_id):
 	print("\tEl sensor es del grupo: ", sensor_grupo[sensor_id_data[0]])
 	print("\tSecuencia del sensor: ", sensor_id_data[1]+sensor_id_data[2]+sensor_id_data[3])
 	print("-"*30)
-	
+
 	return paquete
 
+def pasarDatosAlBuzon(paquete):
 
-while True:
+	datos_sensores = struct.pack('IBBBBBf',paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7])
+	buzon.put(datos_sensores, block=True)
 
-    data_packed, address = sock.recvfrom(1024)
-    paqueteCarreta = struct.unpack('BIBBBBBf', data_packed)
-    separarDatos(paqueteCarreta)
+	print("-"*30)
+	print("Mensaje recibido de: ", sensor_grupo[paquete[2]],".\nEnviando al interpretador.")
+	print("-"*30)
 
-    sensor_id = struct.pack('BBBB',paqueteCarreta[2],paqueteCarreta[3],paqueteCarreta[4],paqueteCarreta[5])
-    paqueteBuey = crearPaqueteBuey(paqueteCarreta[0],sensor_id)
-    sock.sendto(paqueteBuey, address)
+def esKeepAlive(tipo):
+		if(tipo):
+			return False
+		else:
+			return True
+
+try:
+	while True:
+
+		data_packed, address = sock.recvfrom(1024)
+		paqueteCarreta = struct.unpack('BIBBBBBf', data_packed)
+
+		sensor_id = struct.pack('BBBB',paqueteCarreta[2],paqueteCarreta[3],paqueteCarreta[4],paqueteCarreta[5])
+		paqueteBuey = crearPaqueteBuey(paqueteCarreta[0],sensor_id)
+		sock.sendto(paqueteBuey, address)
+
+		if (paqueteBuey in paquetes_recibidos):
+			print("El paquete recibido con random ID ", paqueteCarreta[0] ," del equipo ", sensor_grupo[paqueteCarreta[2]] ," esta repetido, este sera descartado.")
+		else:
+			if(esKeepAlive(paqueteCarreta[6])):
+				seq = paqueteCarreta[1]+paqueteCarreta[2]+paqueteCarreta[3]
+				print("Paquete Keep Alive recibido del sensor ", seq, " de ", sensor_grupo[paqueteCarreta[2]])
+			else:
+				pasarDatosAlBuzon(paqueteCarreta)
+
+		if(len(paquetes_recibidos) <= 6):
+			paquetes_recibidos.append(paqueteBuey)
+		else:
+			paquetes_recibidos.pop(5)
+			paquetes_recibidos.append(paqueteBuey)
+except KeyboardInterrupt:
+	buzon.close()
+	print("\nEl usuario ha cerrado el servidor")
