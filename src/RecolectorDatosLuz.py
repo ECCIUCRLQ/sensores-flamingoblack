@@ -17,15 +17,18 @@ try:
         valor = False #GPIO.input(GPIO_PIR)
         if valor:
             now = time.time()
-            buzon.put([1, int(now)], msg_type=2)
+            #now = datetime.date.today()
+            buzon.put([1, 2, now])
             #file.write("Light no detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
             print("Obscuridad :(" + str(valor) + str(now)) 
             print(buzon.get())       
         else:
             now = time.time()
-            buzon.put([0, int(now)], msg_type=2)
+            #now = datetime.date.today()
+            buzon.put([0, 2, now])
             #file.write("Light detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("Luz :)" + str(valor))
+            print(now)
+            print("Luz :)" + str(valor) + str(now))
             print(buzon.get()) 
         time.sleep(1)
 except KeyboardInterrupt:
