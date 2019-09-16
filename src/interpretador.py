@@ -13,23 +13,23 @@ KEY = 36
 buzon = SYSV.Queue(KEY)
 
 carpeta_equipo = {
-    1:'/Sensores/Whitenoise'
-    2:'/Sensores/FlamingoBlack'
-    3:'/Sensores/GISSO'
-    4:'/Sensores/KOF'
-    5:'/Sensores/Equipo404'
+    1:'/Sensores/Whitenoise',
+    2:'/Sensores/FlamingoBlack',
+    3:'/Sensores/GISSO',
+    4:'/Sensores/KOF',
+    5:'/Sensores/Equipo404',
     6:'/Sensores/Poffis'
 }
 
 archivo_sensor = {
-    1:"Movimiento.txt"
-    2:"BigSound.txt"
-    3:"Fotoresistor.txt"
-    4:"Shock.txt"
-    5:"Touch.txt"
-    6:"Humedad.txt"
-    7:"BigSound.txt"
-    8:"Tmperatura.txt"
+    1:"Movimiento.txt",
+    2:"BigSound.txt",
+    3:"Fotoresistor.txt",
+    4:"Shock.txt",
+    5:"Touch.txt",
+    6:"Humedad.txt",
+    7:"BigSound.txt",
+    8:"Tmperatura.txt",
     9:"Ultrasonico.txt"
 }
 
@@ -47,7 +47,7 @@ try:
         data_unpacked = struct.unpack('IBBBBBf', data_packed)
         if not os.path.isdir(carpeta_equipo[data_unpacked[1]]):
             os.makedirs(carpeta_equipo[data_unpacked[1]])
-        archivo = open(carpeta_equipo[data_unpacked[5], "a+")
+        archivo = open(carpeta_equipo[data_unpacked[5]], "a+")
         archivo.write(data_unpacked[0] + data_unpacked[6] + "\n")
         archivo.close()
 
