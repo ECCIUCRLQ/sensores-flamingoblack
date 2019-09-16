@@ -25,4 +25,5 @@ Al final de esta fase se espera que sin importar el sensor que se esté usando, 
 Se realizará una demo al final de la fase, donde cada equipo debe presentarel funcionamiento de su implementación(incluyendo la posibilidad de conectar sensores de un equipo A al recolector de un equipo B).La presentación será en horas de clase el martes 17de septiembre. 
 
 
-![Diagrama General](https://ibb.co/nmXyn88)
+![Diagrama General](https://user-images.githubusercontent.com/54404955/64930681-6483e880-d7f0-11e9-9b1c-997c16740bce.png)
+
