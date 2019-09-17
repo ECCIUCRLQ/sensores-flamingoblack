@@ -13,12 +13,12 @@ KEY = 36
 buzon = SYSV.Queue(KEY)
 
 carpeta_equipo = {
-    1:'/Sensores/Whitenoise',
-    2:'/Sensores/FlamingoBlack',
-    3:'/Sensores/GISSO',
-    4:'/Sensores/KOF',
-    5:'/Sensores/Equipo404',
-    6:'/Sensores/Poffis'
+    1:"/home/polina/Desktop/Sensores/Whitenoise",
+    2:"/home/polina/Desktop/Sensores/FlamingoBlack",
+    3:"/home/polina/Desktop/Sensores/GISSO",
+    4:"/home/polina/Desktop/Sensores/KOF",
+    5:"/home/polina/Desktop/Sensores/Equipo404",
+    6:"/home/polina/Desktop/Sensores/Poffis"
 }
 
 archivo_sensor = {
@@ -47,8 +47,8 @@ try:
         data_unpacked = struct.unpack('IBBBBBf', data_packed)
         if not os.path.isdir(carpeta_equipo[data_unpacked[1]]):
             os.makedirs(carpeta_equipo[data_unpacked[1]])
-        archivo = open(carpeta_equipo[data_unpacked[5]], "a+")
-        archivo.write(data_unpacked[0] + data_unpacked[6] + "\n")
+        archivo = open(carpeta_equipo[data_unpacked[1]] + "/" + str(data_unpacked[2]) + str(data_unpacked[3]) + str(data_unpacked[4]) + archivo_sensor[data_unpacked[5]], "a+")
+        archivo.write(str(time.ctime(data_unpacked[0])) + " " + str(data_unpacked[6]) + "\n")
         archivo.close()
 
 
