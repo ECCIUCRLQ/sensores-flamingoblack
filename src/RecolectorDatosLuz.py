@@ -18,7 +18,7 @@ try:
         #este if es del keep alive
         if cambioDeEstado == valor:
             now = time.time()
-            buzon.put([2, 1, now])
+            buzon.put([2, 2, now])
             #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
             print("Keep Alive" +  str(now))
             #print(buzon.get()) 
