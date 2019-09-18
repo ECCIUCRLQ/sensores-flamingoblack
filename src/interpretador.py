@@ -23,13 +23,13 @@ carpeta_equipo = {
 
 archivo_sensor = {
     1:"Movimiento.txt",
-    2:"BigSound.txt",
+    2:"BigSoundBool.txt",
     3:"Fotoresistor.txt",
     4:"Shock.txt",
     5:"Touch.txt",
     6:"Humedad.txt",
-    7:"BigSound.txt",
-    8:"Tmperatura.txt",
+    7:"BigSoundInt.txt",
+    8:"Temperatura.txt",
     9:"Ultrasonico.txt"
 }
 
