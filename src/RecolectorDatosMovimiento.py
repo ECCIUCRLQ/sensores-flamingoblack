@@ -1,34 +1,45 @@
+import RPi.GPIO as GPIO
 import socket
 import time
 import datetime
-#import RPi.GPIO as GPIO
 from ipcqueue import sysvmq as SYSV
 
-#GPIO.setmode(GPIO.BCM)
-#GPIO_PIR = 7
-#GPIO.setup(GPIO_PIR, GPIO.IN)
+GPIO.setmode(GPIO.BCM)
+GPIO_PIR = 7
+GPIO.setup(GPIO_PIR, GPIO.IN)
 
 buzon = SYSV.Queue(63)
-
+cambioDeEstado = False
 #file = open("datos.txt", "w+")
 
 try:
     while True:
-        if True: #GPIO.input(GPIO_PIR):
+        valor = GPIO.input(GPIO_PIR)
+        #este if es del keep alive
+        if cambioDeEstado == valor:
             now = time.time()
-            buzon.put([1, int(now)], msg_type=1)
+            buzon.put([2, 1, now])
             #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("Intruder" + str(int(now)))
-            print(buzon.get())             
+            print("Keep Alive" +  str(now))
+            #print(buzon.get()) 
         else:
-            now = time.time()
-            buzon.put([0, int(now)], msg_type=1)
-            #file.write("Intruder not detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("No intruder" + str(int(now)))
-            print(buzon.get()) 
+            if valor:
+                now = time.time()
+                buzon.put([1, 1, now])
+                #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
+                print("Intruder" +  str(now))
+                #print(buzon.get())
+                cambioDeEstado = True             
+            else:
+                now = time.time()
+                buzon.put([0, 1, now])
+                #file.write("Intruder not detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
+                print("No intruder" + str(now))
+                #print(buzon.get())
+                cambioDeEstado = False 
         time.sleep(1)
 except KeyboardInterrupt:
-    now = datetime.datetime.now()
+    now = time.time()
     #file.write("User exited. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss"))
     #file.close()
-    #GPIO.cleanup()
+    GPIO.cleanup()
