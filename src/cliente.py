@@ -12,6 +12,7 @@ UDP_PORT = 10001
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
 buzon = SYSV.Queue(63)
+emptyQueue = True
 
 class myPackage:
 
@@ -39,20 +40,18 @@ def obtainDateData():
 		sensor_data = buzon.get_nowait()
 	except:
 		print("Queue is empty")
-		my_pack.data = 0
-		my_pack.date = time.time()
-		my_pack.sensor_id[3] = 0x00
-		my_pack.sensor_type = 0x00
-		my_pack.random_id = randomGenerator()
+		emptyQueue = True
 		return
 
 	if sensor_data[1] == 1:
+		emptyQueue = False
 		my_pack.data = sensor_data[0]
 		my_pack.date = sensor_data[2]
 		my_pack.sensor_id[3] = 0x01
 		my_pack.sensor_type = 0x01
 		my_pack.random_id = randomGenerator()
 	elif sensor_data[1] == 2:
+		emptyQueue = False
 		my_pack.data = sensor_data[0]
 		my_pack.date = sensor_data[2]
 		my_pack.sensor_id[3] = 0x02
@@ -77,17 +76,19 @@ def checkResponse(data_packed):
 while True:
 
 	obtainDateData()
-	sending_package = packageConstructor()
+	if not emptyQueue:
 
-	while True:
-		sock.sendto(sending_package, (UDP_IP, UDP_PORT))
-		timeout = select.select([sock], [], [], 5)
+		sending_package = packageConstructor()
 
-		if timeout[0]:
-			data_packed, address = sock.recvfrom(1024)
-			package_state = checkResponse(data_packed)
+		while True:
+			sock.sendto(sending_package, (UDP_IP, UDP_PORT))
+			timeout = select.select([sock], [], [], 5)
 
-			if package_state == 0:
-				break
-		else:
-			print("Timeout reached. Sending package again.")
+			if timeout[0]:
+				data_packed, address = sock.recvfrom(1024)
+				package_state = checkResponse(data_packed)
+
+				if package_state == 0:
+					break
+			else:
+				print("Timeout reached. Sending package again.")
