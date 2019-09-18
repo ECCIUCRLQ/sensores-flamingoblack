@@ -2,7 +2,7 @@
 import sys
 import struct
 import time
-import socket
+#import socket
 import time
 import datetime
 import os
@@ -33,22 +33,23 @@ archivo_sensor = {
     9:"Ultrasonico.txt"
 }
 
-def desempacar(datos):
+""" def desempacar(datos):
     fecha = time.ctime(datos[0])
     equipo_sensor = datos[1]
     seq_sensor = datos[2] + datos[3] + datos[4]
     tipo = datos[5]
-    evento = datos[6]
+    evento = datos[6] """
 
 
 try:
     while True:
-        data_packed = buzon.get(block=True, msg_type=0)
-        data_unpacked = struct.unpack('IBBBBBf', data_packed)
+        data_unpacked = buzon.get(block=True, msg_type=0)
+        #data_unpacked = struct.unpack('IBBBBBf', data_packed)
         if not os.path.isdir(carpeta_equipo[data_unpacked[1]]):
             os.makedirs(carpeta_equipo[data_unpacked[1]])
         archivo = open(carpeta_equipo[data_unpacked[1]] + "/" + str(data_unpacked[2]) + str(data_unpacked[3]) + str(data_unpacked[4]) + archivo_sensor[data_unpacked[5]], "a+")
         archivo.write(str(time.ctime(data_unpacked[0])) + " " + str(data_unpacked[6]) + "\n")
+        print("Data archived: date - " + str(time.ctime(data_unpacked[0])) + "evento - " + str(data_unpacked[6]) + "\n")
         archivo.close()
 
 
