@@ -76,8 +76,8 @@ def crearPaqueteBuey(random_id,sensor_id):
 
 def pasarDatosAlBuzon(paquete):
 
-	datos_sensores = struct.pack('IBBBBBf',paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7])
-	buzon.put(datos_sensores, block=True)
+	#datos_sensores = struct.pack('IBBBBBf',paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7])
+	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True)
 
 	print("-"*30)
 	print("Mensaje recibido de: ", sensor_grupo[paquete[2]],".\nEnviando al interpretador.")
@@ -89,11 +89,18 @@ def esKeepAlive(tipo):
 		else:
 			return True
 
+def desempacarFloat_o_Int(data_packed):
+	paquete = struct.unpack('BIBBBBBi', data_packed)
+	if(paquete[6] == 0x06 or paquete[6] == 0x08):
+		paquete = struct.unpack('BIBBBBBf', data_packed)
+
+	return paquete
+
 try:
 	while True:
 
 		data_packed, address = sock.recvfrom(1024)
-		paqueteCarreta = struct.unpack('BIBBBBBf', data_packed)
+		paqueteCarreta = desempacarFloat_o_Int(data_packed)
 
 		sensor_id = struct.pack('BBBB',paqueteCarreta[2],paqueteCarreta[3],paqueteCarreta[4],paqueteCarreta[5])
 		paqueteBuey = crearPaqueteBuey(paqueteCarreta[0],sensor_id)
