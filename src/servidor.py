@@ -66,11 +66,10 @@ def crearPaqueteBuey(random_id,sensor_id):
 
 	sensor_id_data = struct.unpack('BBBB',sensor_id)
 	paquete = struct.pack('BBBBB',random_id,sensor_id_data[0],sensor_id_data[1],sensor_id_data[2],sensor_id_data[3])
-	print("-"*30)
-	print("Enviando respuesta:\n\tRandom ID: ", random_id)
-	print("\tEl sensor es del grupo: ", sensor_grupo[sensor_id_data[0]])
-	print("\tSecuencia del sensor: ", sensor_id_data[1]+sensor_id_data[2]+sensor_id_data[3])
-	print("-"*30)
+	print "Enviando respuesta:\n\tRandom ID: ", random_id 
+	print "\tEl sensor es del grupo: ", sensor_grupo[sensor_id_data[0]] 
+	print "\tSecuencia del sensor: ", sensor_id_data[1]+sensor_id_data[2]+sensor_id_data[3] 
+	print(" ")
 
 	return paquete
 
@@ -79,8 +78,8 @@ def pasarDatosAlBuzon(paquete):
 	#datos_sensores = struct.pack('IBBBBBf',paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7])
 	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True)
 
-	print("-"*30)
-	print("Mensaje recibido de: ", sensor_grupo[paquete[2]],".\nEnviando al interpretador.")
+        seq = paquete[3] + paquete[4] + paquete[5]
+	print "Mensaje con datos recibido.\nEnviado al interpretador."
 	print("-"*30)
 
 def esKeepAlive(tipo):
@@ -93,6 +92,9 @@ def desempacarFloat_o_Int(data_packed):
 	paquete = struct.unpack('BIBBBBBi', data_packed)
 	if(paquete[6] == 0x06 or paquete[6] == 0x08):
 		paquete = struct.unpack('BIBBBBBf', data_packed)
+	print ("-"*30)
+	print "Paquete recibido, desempacando..."
+	print (" ")
 
 	return paquete
 
@@ -107,19 +109,21 @@ try:
 		sock.sendto(paqueteBuey, address)
 
 		if (paqueteBuey in paquetes_recibidos):
-			print("El paquete recibido con random ID ", paqueteCarreta[0] ," del equipo ", sensor_grupo[paqueteCarreta[2]] ," esta repetido, este sera descartado.")
+			print "El paquete recibido con random ID ", paqueteCarreta[0] ," del equipo ", sensor_grupo[paqueteCarreta[2]] ," esta repetido, este sera descartado."
 		else:
 			if(esKeepAlive(paqueteCarreta[6])):
-				seq = paqueteCarreta[1]+paqueteCarreta[2]+paqueteCarreta[3]
-				print("Paquete Keep Alive recibido del sensor ", seq, " de ", sensor_grupo[paqueteCarreta[2]])
+				seq = paqueteCarreta[3]+paqueteCarreta[4]+paqueteCarreta[5]
+				print "Paquete Keep Alive recibido."
+				print ("-"*30)
 			else:
 				pasarDatosAlBuzon(paqueteCarreta)
 
-		if(len(paquetes_recibidos) <= 6):
-			paquetes_recibidos.append(paqueteBuey)
+		if(len(paquetes_recibidos) <= 5):
+                        
+			paquetes_recibidos.insert(0,paqueteBuey)
 		else:
 			paquetes_recibidos.pop(5)
-			paquetes_recibidos.append(paqueteBuey)
+			paquetes_recibidos.insert(0,paqueteBuey)
 except KeyboardInterrupt:
 	buzon.close()
 	print("\nEl usuario ha cerrado el servidor")

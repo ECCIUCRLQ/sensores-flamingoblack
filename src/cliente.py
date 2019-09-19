@@ -12,7 +12,7 @@ UDP_PORT = 10001
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
 buzon = SYSV.Queue(63)
-emptyQueue = True
+emptyQueue = 1
 
 class myPackage:
 
@@ -26,7 +26,7 @@ my_pack = myPackage()
 
 def packageConstructor():
 
-	sending_package = struct.pack('BIBBBBBf', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
+	sending_package = struct.pack('BIBBBBBi', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
 	return sending_package
 
 def randomGenerator():
@@ -40,23 +40,33 @@ def obtainDateData():
 		sensor_data = buzon.get_nowait()
 	except:
 		print("Queue is empty")
-		emptyQueue = True
+		global emptyQueue
+		emptyQueue = 1
 		return
 
-	if sensor_data[1] == 1:
-		emptyQueue = False
-		my_pack.data = sensor_data[0]
-		my_pack.date = sensor_data[2]
-		my_pack.sensor_id[3] = 0x01
-		my_pack.sensor_type = 0x01
-		my_pack.random_id = randomGenerator()
-	elif sensor_data[1] == 2:
-		emptyQueue = False
-		my_pack.data = sensor_data[0]
-		my_pack.date = sensor_data[2]
-		my_pack.sensor_id[3] = 0x02
-		my_pack.sensor_type = 0x03
-		my_pack.random_id = randomGenerator()
+        if sensor_data[1] == 1:
+                global emptyQueue
+                emptyQueue = 0
+                if(sensor_data[0]==2):
+                    my_pack.sensor_type = 0x00
+                else:
+                    my_pack.sensor_type = 0x01
+                my_pack.data = sensor_data[0]
+                my_pack.date = sensor_data[2]
+                my_pack.sensor_id[3] = 0x01
+                my_pack.random_id = randomGenerator()
+        elif sensor_data[1] == 2:
+                global emptyQueue
+                emptyQueue = 0
+                if(sensor_data[0]==2):
+                    my_pack.sensor_type = 0x00
+                else:
+                    my_pack.sensor_type = 0x03
+                my_pack.data = sensor_data[0]
+                my_pack.date = sensor_data[2]
+                my_pack.sensor_id[3] = 0x02
+                my_pack.random_id = randomGenerator()
+
 
 def checkResponse(data_packed):
 
@@ -74,21 +84,21 @@ def checkResponse(data_packed):
 		return 1
 
 while True:
+    
+    obtainDateData()
+    if emptyQueue == 0:      
+        sending_package = packageConstructor()
 
-	obtainDateData()
-	if not emptyQueue:
+	while True:
+	    sock.sendto(sending_package, (UDP_IP, UDP_PORT))
+	    timeout = select.select([sock], [], [], 5)
 
-		sending_package = packageConstructor()
+	    if timeout[0]:
+                data_packed, address = sock.recvfrom(1024)
+		package_state = checkResponse(data_packed)
 
-		while True:
-			sock.sendto(sending_package, (UDP_IP, UDP_PORT))
-			timeout = select.select([sock], [], [], 5)
-
-			if timeout[0]:
-				data_packed, address = sock.recvfrom(1024)
-				package_state = checkResponse(data_packed)
-
-				if package_state == 0:
-					break
-			else:
-				print("Timeout reached. Sending package again.")
+		if package_state == 0:
+                    break
+	    else:
+		print("Timeout reached. Sending package again.")
+    time.sleep(0.5)

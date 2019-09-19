@@ -13,12 +13,12 @@ KEY = 36
 buzon = SYSV.Queue(KEY)
 
 carpeta_equipo = {
-    1:"/home/polina/Desktop/Sensores/Whitenoise",
-    2:"/home/polina/Desktop/Sensores/FlamingoBlack",
-    3:"/home/polina/Desktop/Sensores/GISSO",
-    4:"/home/polina/Desktop/Sensores/KOF",
-    5:"/home/polina/Desktop/Sensores/Equipo404",
-    6:"/home/polina/Desktop/Sensores/Poffis"
+    1:"Sensores/Whitenoise",
+    2:"Sensores/FlamingoBlack",
+    3:"Sensores/GISSO",
+    4:"Sensores/KOF",
+    5:"Sensores/Equipo404",
+    6:"Sensores/Poffis"
 }
 
 archivo_sensor = {

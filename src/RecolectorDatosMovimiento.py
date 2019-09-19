@@ -5,7 +5,7 @@ import datetime
 from ipcqueue import sysvmq as SYSV
 
 GPIO.setmode(GPIO.BCM)
-GPIO_PIR = 7
+GPIO_PIR = 26
 GPIO.setup(GPIO_PIR, GPIO.IN)
 
 buzon = SYSV.Queue(63)
@@ -20,22 +20,17 @@ try:
             now = time.time()
             buzon.put([2, 1, now])
             #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("Keep Alive" +  str(now))
+            print("Keep Alive " +  str(time.ctime(now)))
             #print(buzon.get()) 
         else:
             if valor:
                 now = time.time()
                 buzon.put([1, 1, now])
                 #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-                print("Intruder" +  str(now))
+                print("Intruder " +  str(time.ctime(now)))
                 #print(buzon.get())
                 cambioDeEstado = True             
             else:
-                now = time.time()
-                buzon.put([0, 1, now])
-                #file.write("Intruder not detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-                print("No intruder" + str(now))
-                #print(buzon.get())
                 cambioDeEstado = False 
         time.sleep(1)
 except KeyboardInterrupt:

@@ -20,22 +20,21 @@ try:
             now = time.time()
             buzon.put([2, 2, now])
             #file.write("Intruder detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-            print("Keep Alive" +  str(now))
+            print("Keep Alive " +  str(time.ctime(now)))
             #print(buzon.get()) 
         else:
             if valor:
                 now = time.time()
                 buzon.put([1, 2, now])
                 #file.write("Light no detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-                print("Obscuridad :(" + str(valor) + str(now)) 
+                print("Luz :) " + str(time.ctime(now))) 
                 #print(buzon.get())   
                 cambioDeEstado = True      
             else:
                 now = time.time()
                 buzon.put([0, 2, now])
                 #file.write("Light detected. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss") + "\n")
-                print(now)
-                print("Luz :)" + str(valor) + str(now))
+                print("Obscuridad :( " + str(time.ctime(now)))
                 #print(buzon.get()) 
                 cambioDeEstado = False
         time.sleep(1)
