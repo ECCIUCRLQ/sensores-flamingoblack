@@ -13,6 +13,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
 
 saved_data = []
+last_id = 0
 
 my_queue = SYSV.Queue(63)
 my_queue_attributes = my_queue.qattr()
@@ -37,9 +38,14 @@ def packageConstructor():
 	return sending_package
 
 def randomGenerator():
-
-	my_random = random.randint(0, 255)
-	return my_random
+	
+	global last_id
+	
+	while True:
+		my_random = random.randint(0, 255)
+		if last_id != my_random:
+			last_id = my_random			
+			return my_random
 
 def obtainDateData(overflow):
 
