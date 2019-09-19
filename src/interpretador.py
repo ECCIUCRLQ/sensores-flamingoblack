@@ -55,5 +55,5 @@ try:
 
 except KeyboardInterrupt:
     now = datetime.datetime.now()
-    file.write("User exited. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss"))
-    file.close()
+    archivo.write("User exited. Date " + now.strftime("%d/%m/%Y Time %Hh:%Mm:%Ss"))
+    archivo.close()
