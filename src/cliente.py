@@ -34,7 +34,7 @@ my_pack = myPackage()
 
 def packageConstructor():
 
-	sending_package = struct.pack('BIBBBBBi', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
+	sending_package = struct.pack('BIBBBBBf', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
 	return sending_package
 
 def randomGenerator():
