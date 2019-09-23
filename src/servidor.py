@@ -89,9 +89,9 @@ def esKeepAlive(tipo):
 			return True
 
 def desempacarFloat_o_Int(data_packed):
-	paquete = struct.unpack('BIBBBBBi', data_packed)
-	if(paquete[6] == 0x06 or paquete[6] == 0x08):
-		paquete = struct.unpack('BIBBBBBf', data_packed)
+	paquete = struct.unpack('BIBBBBBf', data_packed)
+	if(paquete[6] == 0x07 or paquete[6] == 0x09):
+		paquete = struct.unpack('BIBBBBBi', data_packed)
 	print ("-"*30)
 	print "Paquete recibido, desempacando..."
 	print (" ")
