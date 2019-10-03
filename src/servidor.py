@@ -12,6 +12,9 @@ sock.bind((UDP_IP, UDP_PORT))
 
 buzon = SYSV.Queue(36)
 paquetes_recibidos = []
+msgType_actual = 2
+sensor_ids_recibidos = []
+msgType_designados = []
 
 sensor_grupo = {
 	1: 'Whitenoise',
@@ -32,54 +35,29 @@ tipo_sensor = {
 	6: 'Humedad/Temperatura'
 }
 
-"""
-def separarDatos(datos):
-
-	print("-"*30)
-
-	random_id = datos[0]
-	print("El random_id es:", random_id)
-
-	fecha = time.ctime(datos[1])
-	print("Local time:", fecha)
-
-	equipo_sensor = datos[2]
-	print("El sensor es del grupo:", sensor_grupo[equipo_sensor])
-
-	seq_sensor = datos[3] + datos[4] + datos[5]
-	print("El numero de secuencia del sensor es:", seq_sensor)
-
-	tipo = datos[6]
-	print("El tipo del sensor es:", tipo_sensor[tipo])
-
-	evento = datos[7]
-	if evento:
-		print("Hubo evento:", evento)
-	else:
-		print("No hubo evento:", evento)
-
-	print("-"*30)
-
-"""
-
 def crearPaqueteBuey(random_id,sensor_id):
 
 	sensor_id_data = struct.unpack('BBBB',sensor_id)
 	paquete = struct.pack('BBBBB',random_id,sensor_id_data[0],sensor_id_data[1],sensor_id_data[2],sensor_id_data[3])
-	print "Enviando respuesta:\n\tRandom ID: ", random_id 
-	print "\tEl sensor es del grupo: ", sensor_grupo[sensor_id_data[0]] 
-	print "\tSecuencia del sensor: ", sensor_id_data[1]+sensor_id_data[2]+sensor_id_data[3] 
+	print "Enviando respuesta:\n\tRandom ID: ", random_id
+	print "\tEl sensor es del grupo: ", sensor_grupo[sensor_id_data[0]]
+	print "\tSecuencia del sensor: ", sensor_id_data[1]+sensor_id_data[2]+sensor_id_data[3]
 	print(" ")
 
 	return paquete
 
-def pasarDatosAlBuzon(paquete):
+def pasarDatosAlBuzon(paquete,sensor_id):
 
-	#datos_sensores = struct.pack('IBBBBBf',paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7])
-	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True)
+	if not (sensor_id in sensor_ids_recibidos):
+		sensor_ids_recibidos.append(sensor_id)
+		msgType_designados.append(msgType_actual)
+		buzon.put([msgType_actual],block=True,msg_type=1)
+		msgType_actual+=1
 
-        seq = paquete[3] + paquete[4] + paquete[5]
+	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True, msg_type = msgType_designados[sensor_ids_recibidos.index(sensor_id)])
+
 	print "Mensaje con datos recibido.\nEnviado al interpretador."
+	print "Sensor de tipo: ", tipo_sensor[paquete[6]]
 	print("-"*30)
 
 def esKeepAlive(tipo):
@@ -116,14 +94,13 @@ try:
 				print "Paquete Keep Alive recibido."
 				print ("-"*30)
 			else:
-				pasarDatosAlBuzon(paqueteCarreta)
+				pasarDatosAlBuzon(paqueteCarreta,sensor_id)
 
 		if(len(paquetes_recibidos) <= 5):
-                        
+
 			paquetes_recibidos.insert(0,paqueteBuey)
 		else:
 			paquetes_recibidos.pop(5)
 			paquetes_recibidos.insert(0,paqueteBuey)
 except KeyboardInterrupt:
-	buzon.close()
 	print("\nEl usuario ha cerrado el servidor")
