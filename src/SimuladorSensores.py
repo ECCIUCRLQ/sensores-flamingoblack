@@ -42,14 +42,17 @@ def crearDato():
 	my_pack.sensor_id[3] = randomNumberGenerator(1, 2)
 	my_pack.sensor_type = randomNumberGenerator(1, 9)
 	if my_pack.sensor_type == 9 or my_pack.sensor_type == 7:
-		my_pack.data = randomFloatGenerator(0.0, 1000.0)
+		my_pack.data = randomFloatGenerator(0, 1000)
 	elif my_pack.sensor_type == 6 or my_pack.sensor_type == 8:
 		my_pack.data = randomFloatGenerator(0.0, 100.0)
 	else:
 		my_pack.data = randomFloatGenerator(0.0, 1.0)
 
 def packageConstructor():
-	sending_package = struct.pack('BIBBBBBf', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
+	if my_pack.sensor_type == 9 or my_pack.sensor_type == 7:
+		sending_package = struct.pack('BIBBBBBI', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
+	else:
+		sending_package = struct.pack('BIBBBBBf', my_pack.random_id, my_pack.date, my_pack.sensor_id[0], my_pack.sensor_id[1], my_pack.sensor_id[2], my_pack.sensor_id[3], my_pack.sensor_type, my_pack.data)
 	return sending_package
 
 def checkResponse(data_packed):
