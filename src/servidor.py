@@ -13,7 +13,7 @@ sock.bind((UDP_IP, UDP_PORT))
 buzon = SYSV.Queue(36)
 paquetes_recibidos = []
 msgType_actual = 2
-sensor_ids_recibidos = []
+sensor_ids_reconocidos = []
 msgType_designados = []
 
 sensor_grupo = {
@@ -48,13 +48,13 @@ def crearPaqueteBuey(random_id,sensor_id):
 
 def pasarDatosAlBuzon(paquete,sensor_id):
 
-	if not (sensor_id in sensor_ids_recibidos):
-		sensor_ids_recibidos.append(sensor_id)
+	if not (sensor_id in sensor_ids_reconocidos):
+		sensor_ids_reconocidos.append(sensor_id)
 		msgType_designados.append(msgType_actual)
 		buzon.put([msgType_actual],block=True,msg_type=1)
 		msgType_actual+=1
 
-	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True, msg_type = msgType_designados[sensor_ids_recibidos.index(sensor_id)])
+	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True, msg_type = msgType_designados[sensor_ids_reconocidos.index(sensor_id)])
 
 	print "Mensaje con datos recibido.\nEnviado al interpretador."
 	print "Sensor de tipo: ", tipo_sensor[paquete[6]]
