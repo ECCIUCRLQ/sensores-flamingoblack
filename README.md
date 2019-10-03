@@ -28,5 +28,5 @@ Usando como base el código de la etapa anterior, en esta parte del proyecto se 
 
 Se deberá presentar una demo de esta fase el martes 22 de octubre en horas de clase.
 
-![Diagrama General](https://user-images.githubusercontent.com/54404955/64930681-6483e880-d7f0-11e9-9b1c-997c16740bce.png)
+![DGE2](https://user-images.githubusercontent.com/54404955/66105390-9af38e80-e578-11e9-8281-c7f6aaa71614.png)
 
