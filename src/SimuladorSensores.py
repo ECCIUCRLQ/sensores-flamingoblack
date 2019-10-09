@@ -35,18 +35,76 @@ def randomFloatGenerator(inicio, fin):
 	my_random = random.uniform(inicio, fin)
 	return my_random
 
+#switch 
+def whitenoise():
+	if(my_pack.sensor_id[3] == 0x01):
+		my_pack.sensor_type = 0x01
+	elif(my_pack.sensor_id[3] == 0x02):
+		my_pack.sensor_type = 0x02
+	my_pack.data = randomFloatGenerator(0.0, 1.0)
+
+def flamingoblack():
+	if(my_pack.sensor_id[3] == 0x01):
+		my_pack.sensor_type = 0x01
+	elif(my_pack.sensor_id[3] == 0x02):
+		my_pack.sensor_type = 0x03
+	my_pack.data = randomFloatGenerator(0.0, 1.0)
+
+def gisso():
+	if(my_pack.sensor_id[3] == 0x01):
+		my_pack.sensor_type = 0x01
+	elif(my_pack.sensor_id[3] == 0x02):
+		my_pack.sensor_type = 0x04
+	my_pack.data = randomFloatGenerator(0.0, 1.0)
+
+def kof():
+	if(my_pack.sensor_id[3] == 0x01):
+		my_pack.sensor_type = 0x01
+	elif(my_pack.sensor_id[3] == 0x02):
+		my_pack.sensor_type = 0x05
+	my_pack.data = randomFloatGenerator(0.0, 1.0)
+
+def equipo404():
+	if(my_pack.sensor_id[3] == 0x01):
+		my_pack.sensor_type = 0x01
+		my_pack.data = randomFloatGenerator(0.0, 1.0)
+	elif(my_pack.sensor_id[3] == 0x02):
+		sensorTypeList = [0x06,0x08]
+		my_pack.sensor_type = random.choice(sensorTypeList)
+		my_pack.data = randomFloatGenerator(0.0, 100.0)
+
+def poffis():
+	if(my_pack.sensor_id[3] == 0x01):
+		my_pack.sensor_type = 0x09
+	elif(my_pack.sensor_id[3] == 0x02):
+		my_pack.sensor_type = 0x07
+	my_pack.data = randomNumberGenerator(0, 1000)
+
+def generarSensorIdyDato(grupoID):
+	switcher = {
+		1:whitenoise,
+		2:flamingoblack,
+		3:gisso,
+		4:kof,
+		5:equipo404,
+		6:poffis
+	}
+	completarPaquete = switcher.get(grupoID,lambda: "Numero del grupo invalido")
+	completarPaquete()
+
 def crearDato():
 	my_pack.date = time.time()
 	my_pack.random_id = randomNumberGenerator(0, 255)
 	my_pack.sensor_id[0] = randomNumberGenerator(1, 6)
 	my_pack.sensor_id[3] = randomNumberGenerator(1, 2)
-	my_pack.sensor_type = randomNumberGenerator(1, 9)
-	if my_pack.sensor_type == 9 or my_pack.sensor_type == 7:
-		my_pack.data = randomFloatGenerator(0, 1000)
-	elif my_pack.sensor_type == 6 or my_pack.sensor_type == 8:
-		my_pack.data = randomFloatGenerator(0.0, 100.0)
-	else:
-		my_pack.data = randomFloatGenerator(0.0, 1.0)
+	generarSensorIdyDato(my_pack.sensor_id[0])
+	
+""" 	print "\tID Grupo: ", my_pack.sensor_id[0]
+	print "\tID Sensor: ", my_pack.sensor_id[3]
+	print "\tTipo Sensor: ", my_pack.sensor_type
+	print "\tDato: ", my_pack.data """
+
+	#my_pack.sensor_type = 0x00
 
 def packageConstructor():
 	if my_pack.sensor_type == 9 or my_pack.sensor_type == 7:
