@@ -1,6 +1,7 @@
 # coding=utf-8
 import os
 import time
+import sys
 from ipcqueue import sysvmq as SYSV
 
 my_queue = SYSV.Queue(14)
@@ -93,6 +94,18 @@ def update_page_table(update_page, this_page):
 
         new_page_file.close()
 
+def check_registered_sensor(sensor):
+
+    my_key = transform_into_key(sensor)
+
+    for key in sensor_manager:
+        if my_key == key:
+            return
+    
+    data_size = len(sensor) - 4
+    sensor_manager[my_key] = [False, -1, -1, data_size]
+    return
+
 def main():
 
     global first_time
@@ -105,6 +118,7 @@ def main():
             if(data != 0):
                 sensor_id = bytearray([data[0], data[1], data[2], data[3]])
                 sensor_key = transform_into_key(sensor_id)
+                check_registered_sensor(sensor_id)
 
                 if(first_time == False):
                     first_time = True
