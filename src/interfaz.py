@@ -2,32 +2,144 @@
 import os
 import time
 import sys
+import random
+import threading
 from ipcqueue import sysvmq as SYSV
 
-my_queue = SYSV.Queue(14)
+colector_queue = SYSV.Queue(14)  # cola para recolector
+plotter_queue = SYSV.Queue(15)   # cola para graficador
 first_time = False
+lock = threading.Lock()
 
-def obtener_datos():
+'''
+class threadPlotter(threading.Thread):
+    def run(self):
+        while True:
+            plotter_sensor_id = check_plotter_request()
+            
+            if(plotter_sensor_id != 0):
+                all_sensor_data = recover_data_from_memory(plotter_sensor_id)
+                plotter_queue.put(all_sensor_data, msg_type = 2)
+            else:
+                lock.acquire()
+                print ("No hay pedidos del graficador.\n")
+                lock.release()
+                time.sleep(4)
+'''
+
+class threadsInterface(threading.Thread):
+    
+    def run(self):
+
+        my_name = self.getName()
+        global first_time
+
+        while True:
+
+            if(my_name == "inter"):
+                data = obtain_data_from_recolector()
+
+                if(data != 0):
+
+                    sensor_id = bytearray([data[0], data[1], data[2], data[3]])
+                    sensor_key = transform_into_key(sensor_id)
+                    check_registered_sensor(sensor_id)
+
+                    if(first_time == False):
+
+                        first_time = True
+                        lock.acquire()
+                        update_sensor_metadata(sensor_key, 1)
+                        lock.release()
+                        save_data(sensor_key)
+
+                    else:
+
+                        lock.acquire()
+                        update_sensor_metadata(sensor_key, 0)
+                        lock.release()
+                        save_data(sensor_key)
+
+                    lock.acquire()
+                    print ("Obtuve datos (" + my_name + ")\n")
+                    lock.release()
+
+                else:
+
+                    lock.acquire()
+                    print ("No hay datos (" + my_name + ")\n")
+                    lock.release()
+                
+                time.sleep(4)
+
+            else:
+                plotter_sensor_id = check_plotter_request()
+            
+                if(plotter_sensor_id != 0):
+
+                    lock.acquire()
+                    all_sensor_data = recover_data_from_memory(plotter_sensor_id)
+                    lock.release()
+                    plotter_queue.put(all_sensor_data, msg_type = 2)
+
+                else:
+
+                    lock.acquire()
+                    print ("No hay pedidos del graficador (" + my_name + ")\n")
+                    lock.release()
+                
+                time.sleep(4)
+
+def check_plotter_request():
 
     try:
-        data = my_queue.get_nowait()
+        sensor_id = plotter_queue.get_nowait()
+        return sensor_id
+    except:
+        return 0
+
+def obtain_data_from_recolector():
+
+    try:
+        data = colector_queue.get_nowait()
         return data
     except:
-        print("No hay datos")
         return 0
+
+def recover_data_from_memory(sensor_id):
+
+    page_file = open("PageTableIndex.csv", "r+")
+    line = page_file.readline()
+    
+    while line:
+
+        if(line.find(sensor_id) != -1):
+            line.strip("\n")
+            pages_string = line.split(",")
+            pages_string.pop(0)
+            num_pages = map(int, pages_string)
+            print (num_pages)
+            #request = llamar a método que devuelve páginas a partir de un array de páginas, en este caso pages
+            return num_pages
+
+        line = page_file.readline()
+    
+    page_file.close()
 
 def transform_into_key(byte_array):
 
     my_key = str(byte_array[0]) + str(byte_array[1]) + str(byte_array[2]) + str(byte_array[3])
     return my_key
 
-def update_sensor(key, page):
+def update_sensor_metadata(key, page):
 
     data = sensor_manager[key]
+
     if(data[0] == False):
         data[0] = True
-        data[1] = 5 # este numero es para prueba
-        # data[1] = metodo de MM que devuelve numero pagina
+        # llamo a metodo para pedir nueva pagina
+        # data[1] = actualizo nuevo numero de pagina
+        data[1] = random.randint(0,50)
         data[2] = 0
         if(page == 0):
             update_page_table(0, key)
@@ -35,32 +147,40 @@ def update_sensor(key, page):
             update_page_table(1, key)
     else:
         if(data[3] == 5):
-            if(data[2] == 500):
+            if(data[2] == 5):
                 # llamo a metodo para pedir nueva pagina
                 # data[1] = actualizo nuevo numero de pagina
-                data[2] = 5
+                data[1] = random.randint(0,50)
+                data[2] = 0
                 if(page == 0):
                     update_page_table(0, key)
                 else:
                     update_page_table(1, key)
-            else:
-                data[2] += 5
         else:
             if(data[2] == 40000):
                 # llamo a metodo para pedir nueva pagina
                 # data[1] = actualizo nuevo numero de pagina
-                data[2] = 8
+                data[2] = 0
                 if(page == 0):
                     update_page_table(0, key)
                 else:
                     update_page_table(1, key)
-            else:
-                data[2] += 8
 
+def save_data(key):
+
+    data = sensor_manager[key]
+
+    # llamo a metodo para guardar data en MM con parámetros (# página, offset)
+    data[2] += data[3]
 
 def update_page_table(update_page, this_page):
     
     if(update_page):
+
+        if(os.path.isfile("PageTableIndex.csv")):
+            print ("remuevo")
+            os.remove("PageTableIndex.csv")
+
         page_file = open("PageTableIndex.csv", "w+")
 
         for key in sensor_manager.keys():
@@ -108,36 +228,36 @@ def check_registered_sensor(sensor):
 
 def main():
 
-    global first_time
+    threadinter = threadsInterface(name = "inter")
+    threadplot = threadsInterface(name = "plot")
 
-    try:
-        while True:
-            
-            data = obtener_datos()
-            
-            if(data != 0):
-                sensor_id = bytearray([data[0], data[1], data[2], data[3]])
-                sensor_key = transform_into_key(sensor_id)
-                check_registered_sensor(sensor_id)
+    threadinter.start()
+    threadplot.start()
 
-                if(first_time == False):
-                    first_time = True
-                    update_sensor(sensor_key, 1)
-                else:
-                    update_sensor(sensor_key, 0)
-
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-	    print ("\nInterface shutdown.")
-    
     '''
-    miArreglo = bytearray([4,0,0,1])
-    new_key = transform_into_key(miArreglo)
-    update_sensor(new_key)
-    update_page_table(1)
-    time.sleep(5)
-    update_page_table(0)
+    while True:
+        
+        data = obtain_data_from_recolector()
+        plotter_sensor_id = check_plotter_request()
+        
+        if(plotter_sensor_id != 0):
+            all_sensor_data = recover_data_from_memory(plotter_sensor_id)
+            plotter_queue.put(all_sensor_data)
+
+        if(data != 0):
+            sensor_id = bytearray([data[0], data[1], data[2], data[3]])
+            sensor_key = transform_into_key(sensor_id)
+            check_registered_sensor(sensor_id)
+
+            if(first_time == False):
+                first_time = True
+                update_sensor_metadata(sensor_key, 1)
+                save_data(sensor_key)
+            else:
+                update_sensor_metadata(sensor_key, 0)
+                save_data(sensor_key)
+
+        time.sleep(1)
     '''
 
 sensor_manager = {
