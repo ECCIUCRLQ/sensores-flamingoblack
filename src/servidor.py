@@ -46,13 +46,7 @@ def crearPaqueteBuey(random_id,sensor_id):
 
 	return paquete
 
-def pasarDatosAlBuzon(paquete,sensor_id):
-
-	if not (sensor_id in sensor_ids_reconocidos):
-		sensor_ids_reconocidos.append(sensor_id)
-		msgType_designados.append(msgType_actual)
-		buzon.put([msgType_actual],block=True,msg_type=1)
-		msgType_actual+=1
+def pasarDatosAlBuzon(paquete):
 
 	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True, msg_type = msgType_designados[sensor_ids_reconocidos.index(sensor_id)])
 
