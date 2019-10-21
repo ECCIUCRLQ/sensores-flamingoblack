@@ -26,6 +26,16 @@ class AdministradorMem:
     def getPaginaPorCambiar(self, tamano):
         return self.colaPaginas[tamano].pop()
 
+    
+    def vaciarPagina(self,tamano,posicion):
+        longitud = 0
+        if (tamano == 0):
+            longitud = 40000
+        else:
+            longitud == 500
+
+        for i in range (posicion,posicion+longitud):
+            self.memoriaPrincipal[tamano][i] == 0x00
 
     def enviarPagMemSecundaria(self, tamano, numPagina):
         busDatos = bytearray(1)
@@ -41,6 +51,9 @@ class AdministradorMem:
         archivo = open("paginas/" + str(numPagina) + ".txt","w+b")
 
         archivo.write(busDatos)
+        
+        self.vaciarPagina(tamano,posicion)
+        self.tablaPaginas[numPagina] = -1
 
     def cargarPagMemSecundaria(self,tamano,numPagina,posicion):
         nombreArchivo = "paginas/" + str(numPagina) + ".txt"
@@ -56,17 +69,8 @@ class AdministradorMem:
 
         for i in range(posicion,posicion+longitud):
             self.memoriaPrincipal[tamano][i] = busDatos[i-posicion]
-
-
-    def vaciarPagina(self,tamano,posicion):
-        longitud = 0
-        if (tamano == 0):
-            longitud = 40000
-        else:
-            longitud == 500
-
-        for i in range (posicion,posicion+longitud):
-            self.memoriaPrincipal[tamano][i] == 0x00
+            
+        self.tablaPaginas[numPagina] = posicion
 
     def buscarPosicionVacia(self,tamano):
         posicion = 0
@@ -124,7 +128,6 @@ class AdministradorMem:
             posicion = self.tablaPaginas[paginaCambiar]
             self.tablaPaginas[paginaCambiar] = -1
             self.enviarPagMemSecundaria(tamano,paginaCambiar)
-            self.vaciarPagina(tamano,posicion)
         else:
             posicion = self.buscarPosicionVacia(tamano)
 
