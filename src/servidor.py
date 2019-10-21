@@ -88,7 +88,7 @@ try:
 				print "Paquete Keep Alive recibido."
 				print ("-"*30)
 			else:
-				pasarDatosAlBuzon(paqueteCarreta,sensor_id)
+				pasarDatosAlBuzon(paqueteCarreta)
 
 		if(len(paquetes_recibidos) <= 5):
 
