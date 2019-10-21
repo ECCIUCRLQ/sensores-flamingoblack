@@ -4,12 +4,15 @@ import time
 import sys
 import random
 import threading
+import administradorMem
 from ipcqueue import sysvmq as SYSV
+
 
 colector_queue = SYSV.Queue(14)  # cola para recolector
 plotter_queue = SYSV.Queue(15)   # cola para graficador
 first_time = False
 lock = threading.Lock()
+memory_admin = administradorMem.AdministradorMem()
 
 '''
 class threadPlotter(threading.Thread):
@@ -34,14 +37,17 @@ class threadsInterface(threading.Thread):
         my_name = self.getName()
         global first_time
 
-        while True:
+        if(my_name == "inter"):
 
-            if(my_name == "inter"):
+            while True:
+
                 data = obtain_data_from_recolector()
 
                 if(data != 0):
 
                     sensor_id = bytearray([data[0], data[1], data[2], data[3]])
+                    data_array = bytearray([data[4], data[5]])
+                    
                     sensor_key = transform_into_key(sensor_id)
                     check_registered_sensor(sensor_id)
 
@@ -51,14 +57,14 @@ class threadsInterface(threading.Thread):
                         lock.acquire()
                         update_sensor_metadata(sensor_key, 1)
                         lock.release()
-                        save_data(sensor_key)
+                        save_data(sensor_key, data_array)
 
                     else:
 
                         lock.acquire()
                         update_sensor_metadata(sensor_key, 0)
                         lock.release()
-                        save_data(sensor_key)
+                        save_data(sensor_key, data_array)
 
                     lock.acquire()
                     print ("Obtuve datos (" + my_name + ")\n")
@@ -72,14 +78,20 @@ class threadsInterface(threading.Thread):
                 
                 time.sleep(4)
 
-            else:
+        else:
+
+            while True:
+
                 plotter_sensor_id = check_plotter_request()
+                data = sensor_manager[plotter_sensor_id]
             
                 if(plotter_sensor_id != 0):
 
                     lock.acquire()
-                    all_sensor_data = recover_data_from_memory(plotter_sensor_id)
+                    all_sensor_data = recover_data_from_memory(plotter_sensor_id, data[2])
                     lock.release()
+                    
+                    # ver como mandar a graficador
                     plotter_queue.put(all_sensor_data, msg_type = 2)
 
                 else:
@@ -108,19 +120,21 @@ def obtain_data_from_recolector():
 
 def recover_data_from_memory(sensor_id):
 
+    data = sensor_manager[sensor_id]
     page_file = open("PageTableIndex.csv", "r+")
     line = page_file.readline()
     
     while line:
 
         if(line.find(sensor_id) != -1):
+            
             line.strip("\n")
             pages_string = line.split(",")
             pages_string.pop(0)
+            
             num_pages = map(int, pages_string)
-            print (num_pages)
-            #request = llamar a método que devuelve páginas a partir de un array de páginas, en este caso pages
-            return num_pages
+            all_data = memory_admin.obtenerDatos(data[3], num_pages)
+            return all_data
 
         line = page_file.readline()
     
@@ -136,41 +150,53 @@ def update_sensor_metadata(key, page):
     data = sensor_manager[key]
 
     if(data[0] == False):
+
+        # data[1] = random.randint(0,50) dato para prueba
+
         data[0] = True
-        # llamo a metodo para pedir nueva pagina
-        # data[1] = actualizo nuevo numero de pagina
-        data[1] = random.randint(0,50)
+        data[1] = memory_admin.reservarPagina(data[3])
         data[2] = 0
+        
         if(page == 0):
             update_page_table(0, key)
         else:
             update_page_table(1, key)
+    
     else:
+
         if(data[3] == 5):
+            
             if(data[2] == 5):
-                # llamo a metodo para pedir nueva pagina
-                # data[1] = actualizo nuevo numero de pagina
-                data[1] = random.randint(0,50)
+                
+                # data[1] = random.randint(0,50) dato para prueba
+
+                data[1] = memory_admin.reservarPagina(data[3])
                 data[2] = 0
-                if(page == 0):
-                    update_page_table(0, key)
-                else:
-                    update_page_table(1, key)
-        else:
-            if(data[2] == 40000):
-                # llamo a metodo para pedir nueva pagina
-                # data[1] = actualizo nuevo numero de pagina
-                data[2] = 0
+
                 if(page == 0):
                     update_page_table(0, key)
                 else:
                     update_page_table(1, key)
 
-def save_data(key):
+        else:
+
+            if(data[2] == 40000):
+
+                # data[1] = random.randint(0,50) dato para prueba
+
+                data[1] = memory_admin.reservarPagina(data[3])
+                data[2] = 0
+
+                if(page == 0):
+                    update_page_table(0, key)
+                else:
+                    update_page_table(1, key)
+
+def save_data(key, data_to_be_saved):
 
     data = sensor_manager[key]
 
-    # llamo a metodo para guardar data en MM con parámetros (# página, offset)
+    memory_admin.guardarDato(data[3], data[1], data[2], data_to_be_saved)
     data[2] += data[3]
 
 def update_page_table(update_page, this_page):
@@ -184,19 +210,25 @@ def update_page_table(update_page, this_page):
         page_file = open("PageTableIndex.csv", "w+")
 
         for key in sensor_manager.keys():
+
             data = sensor_manager[key]
+
             if(data[1] != -1):
                 page_file.write(key + "," + str(data[1]) + "\n")
+
             else:
                 page_file.write(key + "\n")
 
         page_file.close()
+
     else:
+
         page_file = open("PageTableIndex.csv", "r+")
         store_buffer = []
         line = page_file.readline()
         
         while line:
+
             store_buffer.append(line.strip("\n"))
             line = page_file.readline()
         
@@ -206,9 +238,11 @@ def update_page_table(update_page, this_page):
         new_page_file = open("PageTableIndex.csv", "w+")
 
         for line in store_buffer:
+
             if(line.find(this_page) != -1):
                 data = sensor_manager[this_page]
                 new_page_file.write(line + "," + str(data[1]) + "\n")
+            
             else:
                 new_page_file.write(line + "\n")
 
