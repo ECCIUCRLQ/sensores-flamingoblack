@@ -70,21 +70,20 @@ class threadsInterface(threading.Thread):
                     print ("No hay datos (" + my_name + ")\n")
                     lock.release()
                 
-                time.sleep(4)
+                time.sleep(1)
 
         else:
 
             while True:
 
                 plotter_sensor_id = check_plotter_request()
-                data = sensor_manager[plotter_sensor_id]
             
                 if(plotter_sensor_id != 0):
 
                     lock.acquire()
 
                     all_sensor_data = recover_data_from_memory(plotter_sensor_id)
-                    plotter_queue.put("Datos se están mandado")
+                    plotter_queue.put("Datos se estan mandado", msg_type = 2)
                     send_through_pipe(all_sensor_data)
                     print ("Datos se han mandado al graficador")
 
@@ -96,7 +95,7 @@ class threadsInterface(threading.Thread):
                     print ("No hay pedidos del graficador (" + my_name + ")\n")
                     lock.release()
                 
-                time.sleep(4)
+                time.sleep(2)
 
 # -----------------
 # Revisa si el graficador ha hecho algun pedido
@@ -128,12 +127,9 @@ def obtain_data_from_recolector():
 
 def send_through_pipe(data):
 
-    if not os.path.exists(pipe_name):
-
-        os.mkfifo(pipe_name)
-
     pipeout = os.open(pipe_name, os.O_WRONLY)
     os.write(pipeout, str(data))
+    print ("Termine de escribir me voy")
 
 # -----------------
 # Accede a la tabla de paginas en memoria secundaria y obtiene todas las paginas de un sensor
@@ -155,7 +151,16 @@ def recover_data_from_memory(sensor_id):
             pages_string.pop(0)
             
             num_pages = map(int, pages_string)
-            all_data = memory_admin.obtenerDatos(data[3], num_pages)
+
+            if data[3] == 5:
+
+                all_data = memory_admin.obtenerDatos(1, num_pages)
+
+            else:
+
+                all_data = memory_admin.obtenerDatos(0, num_pages)
+
+            page_file.close()
             return all_data
 
         line = page_file.readline()
@@ -184,10 +189,18 @@ def update_sensor_metadata(key, page):
 
         # data[1] = random.randint(0,50) dato para prueba
 
-        data[0] = True
-        data[1] = memory_admin.reservarPagina(data[3])
-        data[2] = 0
-        
+        if data[3] == 5:
+
+            data[0] = True
+            data[1] = memory_admin.reservarPagina(1)
+            data[2] = 0
+
+        else:
+
+            data[0] = True
+            data[1] = memory_admin.reservarPagina(0)
+            data[2] = 0
+
         if(page == 0):
             update_page_table(0, key)
         else:
@@ -197,11 +210,11 @@ def update_sensor_metadata(key, page):
 
         if(data[3] == 5):
             
-            if(data[2] == 5):
+            if(data[2] == 500):
                 
                 # data[1] = random.randint(0,50) dato para prueba
 
-                data[1] = memory_admin.reservarPagina(data[3])
+                data[1] = memory_admin.reservarPagina(1)
                 data[2] = 0
 
                 if(page == 0):
@@ -215,7 +228,7 @@ def update_sensor_metadata(key, page):
 
                 # data[1] = random.randint(0,50) dato para prueba
 
-                data[1] = memory_admin.reservarPagina(data[3])
+                data[1] = memory_admin.reservarPagina(0)
                 data[2] = 0
 
                 if(page == 0):
@@ -245,7 +258,14 @@ def save_data(key, data_to_be_saved):
         data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
                                 sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
 
-    memory_admin.guardarDato(data[3], data[1], data[2], data_array)
+    if data[3] == 5:
+
+        memory_admin.guardarDato(1, data[1], data[2], data_array)
+
+    else:
+
+        memory_admin.guardarDato(0, data[1], data[2], data_array)
+    
     data[2] += data[3]
 
 # -----------------
@@ -320,6 +340,10 @@ def check_registered_sensor(sensor):
     return
 
 def main():
+
+    if not os.path.exists(pipe_name):
+
+        os.mkfifo(pipe_name)
 
     threadinter = threadsInterface(name = "inter")
     threadplot = threadsInterface(name = "plot")
