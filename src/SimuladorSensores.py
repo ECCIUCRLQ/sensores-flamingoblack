@@ -41,28 +41,35 @@ def whitenoise():
 		my_pack.sensor_type = 0x01
 	elif(my_pack.sensor_id[3] == 0x02):
 		my_pack.sensor_type = 0x02
-	my_pack.data = randomFloatGenerator(0.0, 1.0)
+	my_pack.data = 1.0
 
 def flamingoblack():
+	dato = 1.0
 	if(my_pack.sensor_id[3] == 0x01):
 		my_pack.sensor_type = 0x01
+		my_pack.data = 1.0
 	elif(my_pack.sensor_id[3] == 0x02):
 		my_pack.sensor_type = 0x03
-	my_pack.data = randomFloatGenerator(0.0, 1.0)
+		if(dato == 1):
+			my_pack.data = 0
+			dato = 0
+		else:
+			my_pack.data = 1.0
+			dato = 1.0
 
 def gisso():
 	if(my_pack.sensor_id[3] == 0x01):
 		my_pack.sensor_type = 0x01
 	elif(my_pack.sensor_id[3] == 0x02):
 		my_pack.sensor_type = 0x04
-	my_pack.data = randomFloatGenerator(0.0, 1.0)
+	my_pack.data = 1.0
 
 def kof():
 	if(my_pack.sensor_id[3] == 0x01):
 		my_pack.sensor_type = 0x01
 	elif(my_pack.sensor_id[3] == 0x02):
 		my_pack.sensor_type = 0x05
-	my_pack.data = randomFloatGenerator(0.0, 1.0)
+	my_pack.data = 1.0
 
 def equipo404():
 	if(my_pack.sensor_id[3] == 0x01):
