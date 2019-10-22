@@ -5,30 +5,21 @@ import sys
 import random
 import threading
 import administradorMem
+import struct
 from ipcqueue import sysvmq as SYSV
 
 
-colector_queue = SYSV.Queue(14)  # cola para recolector
-plotter_queue = SYSV.Queue(15)   # cola para graficador
-first_time = False
-lock = threading.Lock()
-memory_admin = administradorMem.AdministradorMem()
+colector_queue = SYSV.Queue(14)                     # cola para recolector
+plotter_queue = SYSV.Queue(15)                      # cola para graficador
+first_time = False                                  # variable que revisa si es la primera vez que se ejecuto el programa
+lock = threading.Lock()                             # lock para los threads
+memory_admin = administradorMem.AdministradorMem()  # instancia del administrador de memoria
+pipe_name = "my_pipe"                               # pipe designado para enviar datos al graficador
 
-'''
-class threadPlotter(threading.Thread):
-    def run(self):
-        while True:
-            plotter_sensor_id = check_plotter_request()
-            
-            if(plotter_sensor_id != 0):
-                all_sensor_data = recover_data_from_memory(plotter_sensor_id)
-                plotter_queue.put(all_sensor_data, msg_type = 2)
-            else:
-                lock.acquire()
-                print ("No hay pedidos del graficador.\n")
-                lock.release()
-                time.sleep(4)
-'''
+# -----------------
+# Metodo run que va a correr los threads
+# Usa locks en zonas criticas para prevenir condiciones de carrera
+# -----------------
 
 class threadsInterface(threading.Thread):
     
@@ -46,27 +37,30 @@ class threadsInterface(threading.Thread):
                 if(data != 0):
 
                     sensor_id = bytearray([data[0], data[1], data[2], data[3]])
-                    data_array = bytearray([data[4], data[5]])
+                    data_array = ([data[4], data[5]])
                     
                     sensor_key = transform_into_key(sensor_id)
                     check_registered_sensor(sensor_id)
 
+                    lock.acquire()
+
                     if(first_time == False):
 
                         first_time = True
-                        lock.acquire()
+                        #lock.acquire()
                         update_sensor_metadata(sensor_key, 1)
-                        lock.release()
+                        #lock.release()
                         save_data(sensor_key, data_array)
 
                     else:
 
-                        lock.acquire()
+                        #lock.acquire()
                         update_sensor_metadata(sensor_key, 0)
-                        lock.release()
+                        #lock.release()
                         save_data(sensor_key, data_array)
 
-                    lock.acquire()
+                    #lock.acquire()
+
                     print ("Obtuve datos (" + my_name + ")\n")
                     lock.release()
 
@@ -88,11 +82,13 @@ class threadsInterface(threading.Thread):
                 if(plotter_sensor_id != 0):
 
                     lock.acquire()
-                    all_sensor_data = recover_data_from_memory(plotter_sensor_id, data[2])
+
+                    all_sensor_data = recover_data_from_memory(plotter_sensor_id)
+                    plotter_queue.put("Datos se están mandado")
+                    send_through_pipe(all_sensor_data)
+                    print ("Datos se han mandado al graficador")
+
                     lock.release()
-                    
-                    # ver como mandar a graficador
-                    plotter_queue.put(all_sensor_data, msg_type = 2)
 
                 else:
 
@@ -102,6 +98,10 @@ class threadsInterface(threading.Thread):
                 
                 time.sleep(4)
 
+# -----------------
+# Revisa si el graficador ha hecho algun pedido
+# -----------------
+
 def check_plotter_request():
 
     try:
@@ -110,6 +110,10 @@ def check_plotter_request():
     except:
         return 0
 
+# -----------------
+# Revisa si el recolector ha mandado datos
+# -----------------
+
 def obtain_data_from_recolector():
 
     try:
@@ -117,6 +121,24 @@ def obtain_data_from_recolector():
         return data
     except:
         return 0
+
+# -----------------
+# Envia todos los datos del sensor que pidio el graficador a traves de un pipe
+# -----------------
+
+def send_through_pipe(data):
+
+    if not os.path.exists(pipe_name):
+
+        os.mkfifo(pipe_name)
+
+    pipeout = os.open(pipe_name, os.O_WRONLY)
+    os.write(pipeout, str(data))
+
+# -----------------
+# Accede a la tabla de paginas en memoria secundaria y obtiene todas las paginas de un sensor
+# Luego llama a meotdo del administrador que devuelve todos los datos de las respectivas paginas
+# -----------------
 
 def recover_data_from_memory(sensor_id):
 
@@ -140,10 +162,19 @@ def recover_data_from_memory(sensor_id):
     
     page_file.close()
 
+# -----------------
+# Transforma el sensor_id en una llave para acceder a la hash
+# -----------------
+
 def transform_into_key(byte_array):
 
     my_key = str(byte_array[0]) + str(byte_array[1]) + str(byte_array[2]) + str(byte_array[3])
     return my_key
+
+# -----------------
+# Metodo que actualiza la hash de sensor_manager.
+# Actualiza todos los metadatos del sensor de acuerdo a las operaciones que se hayan hecho.
+# -----------------
 
 def update_sensor_metadata(key, page):
 
@@ -192,19 +223,42 @@ def update_sensor_metadata(key, page):
                 else:
                     update_page_table(1, key)
 
+# -----------------
+# Metodo que llama al metodo de la clase del administrador de memoria para guardar dato.
+# Se va a transformar la fecha y el dato del sensor a un byte array para guardar en memoria.
+# -----------------
+
 def save_data(key, data_to_be_saved):
 
     data = sensor_manager[key]
 
-    memory_admin.guardarDato(data[3], data[1], data[2], data_to_be_saved)
+    sensor_date_bytes = struct.pack("I", data_to_be_saved[0])
+    
+    if data[3] == 5:
+    
+        sensor_data_bytes = struct.pack("B", data_to_be_saved[1])
+        data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], sensor_data_bytes[0]])
+
+    else:
+
+        sensor_data_bytes = struct.pack("f", data_to_be_saved[1])
+        data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
+                                sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
+
+    memory_admin.guardarDato(data[3], data[1], data[2], data_array)
     data[2] += data[3]
+
+# -----------------
+# Metodo que actualiza la tabal de paginas que esta en memoria secundaria.
+# Este metodo se invoca cada vez que un sensor necesite resrvar una nueva pagina.
+# -----------------
 
 def update_page_table(update_page, this_page):
     
     if(update_page):
 
         if(os.path.isfile("PageTableIndex.csv")):
-            print ("remuevo")
+            print ("Remuevo")
             os.remove("PageTableIndex.csv")
 
         page_file = open("PageTableIndex.csv", "w+")
@@ -248,6 +302,11 @@ def update_page_table(update_page, this_page):
 
         new_page_file.close()
 
+# -----------------
+# Metodo que revisa si un sensor que mando datos está registrado en la tabla quemada de sensores.
+# Si no es asi, lo agrega a la tabla, y establece todos sus respectivos campos.
+# -----------------
+
 def check_registered_sensor(sensor):
 
     my_key = transform_into_key(sensor)
@@ -268,31 +327,9 @@ def main():
     threadinter.start()
     threadplot.start()
 
-    '''
-    while True:
-        
-        data = obtain_data_from_recolector()
-        plotter_sensor_id = check_plotter_request()
-        
-        if(plotter_sensor_id != 0):
-            all_sensor_data = recover_data_from_memory(plotter_sensor_id)
-            plotter_queue.put(all_sensor_data)
-
-        if(data != 0):
-            sensor_id = bytearray([data[0], data[1], data[2], data[3]])
-            sensor_key = transform_into_key(sensor_id)
-            check_registered_sensor(sensor_id)
-
-            if(first_time == False):
-                first_time = True
-                update_sensor_metadata(sensor_key, 1)
-                save_data(sensor_key)
-            else:
-                update_sensor_metadata(sensor_key, 0)
-                save_data(sensor_key)
-
-        time.sleep(1)
-    '''
+# -----------------
+# Hash que mantiene todos los metadatos de los sensores
+# -----------------
 
 sensor_manager = {
     # key: [primera vez, página actual, por donde va en la página, tamaño del dato del sensor]
