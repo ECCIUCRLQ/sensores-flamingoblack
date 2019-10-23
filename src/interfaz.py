@@ -14,7 +14,6 @@ plotter_queue = SYSV.Queue(15)                      # cola para graficador
 first_time = False                                  # variable que revisa si es la primera vez que se ejecuto el programa
 lock = threading.Lock()                             # lock para los threads
 memory_admin = administradorMem.AdministradorMem()  # instancia del administrador de memoria
-pipe_name = "my_pipe"                               # pipe designado para enviar datos al graficador
 
 # -----------------
 # Metodo run que va a correr los threads
@@ -83,9 +82,9 @@ class threadsInterface(threading.Thread):
                     lock.acquire()
 
                     all_sensor_data = recover_data_from_memory(plotter_sensor_id)
-                    plotter_queue.put("Datos se estan mandado", msg_type = 2)
-                    send_through_pipe(all_sensor_data)
-                    print ("Datos se han mandado al graficador")
+                    plotter_queue.put("Datos se estan mandado\n", msg_type = 2)
+                    send_through_queue(all_sensor_data)
+                    print (str(len(all_sensor_data)) + " datos se han mandado al graficador\n")
 
                     lock.release()
 
@@ -125,11 +124,49 @@ def obtain_data_from_recolector():
 # Envia todos los datos del sensor que pidio el graficador a traves de un pipe
 # -----------------
 
-def send_through_pipe(data):
+def send_through_queue(data):
 
-    pipeout = os.open(pipe_name, os.O_WRONLY)
-    os.write(pipeout, str(data))
-    print ("Termine de escribir me voy")
+    if (len(data) > (15000*8)):
+
+        total = len(data)
+        size = 0
+        
+        while size < len(data):
+
+            if total > (15000*8):
+
+                index = 0
+                part_of_data = []
+
+                while index < (15000*8):
+
+                    part_of_data[index] = data[size]
+                    size += 1
+                    index += 1
+
+                plotter_queue.put(part_of_data, msg_type = 2)
+                total -= size
+
+            else:
+
+                index = 0
+                part_of_data = []
+
+                while index < total:
+
+                    part_of_data[index] = data[size]
+                    size += 1
+                    index += 1
+
+                plotter_queue.put(part_of_data, msg_type = 2)
+                total -= size
+
+        plotter_queue.put(1, msg_type = 2)
+
+    else:
+
+        plotter_queue.put(data, msg_type = 2)
+        plotter_queue.put(1, msg_type = 2)
 
 # -----------------
 # Accede a la tabla de paginas en memoria secundaria y obtiene todas las paginas de un sensor
@@ -340,10 +377,6 @@ def check_registered_sensor(sensor):
     return
 
 def main():
-
-    if not os.path.exists(pipe_name):
-
-        os.mkfifo(pipe_name)
 
     threadinter = threadsInterface(name = "inter")
     threadplot = threadsInterface(name = "plot")
