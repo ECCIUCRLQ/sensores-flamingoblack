@@ -13,7 +13,15 @@ UDP_PORT = 10001
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
 
-#buzon = SYSV.Queue(63)
+saved_data = []
+last_id = 0
+
+queue_overflow = False
+empty_queue = 1
+
+my_queue = SYSV.Queue(63)
+my_queue_attributes = my_queue.qattr()
+my_queue_max_size = my_queue_attributes['max_bytes']
 
 class myPackage:
 
@@ -24,6 +32,16 @@ class myPackage:
 	data = 0.0
 
 my_pack = myPackage()
+
+def randomGenerator():
+	
+	global last_id
+	
+	while True:
+		my_random = random.randint(0, 255)
+		if last_id != my_random:
+			last_id = my_random
+			return my_random
 
 def randomNumberGenerator(inicio, fin):
 
@@ -101,15 +119,15 @@ def generarSensorIdyDato(grupoID):
 
 def crearDato():
 	my_pack.date = time.time()
-	my_pack.random_id = randomNumberGenerator(0, 255)
+	my_pack.random_id = randomGenerator()
 	my_pack.sensor_id[0] = randomNumberGenerator(1, 6)
 	my_pack.sensor_id[3] = randomNumberGenerator(1, 2)
 	generarSensorIdyDato(my_pack.sensor_id[0])
 	
-""" 	print "\tID Grupo: ", my_pack.sensor_id[0]
+	print "\tID Grupo: ", my_pack.sensor_id[0]
 	print "\tID Sensor: ", my_pack.sensor_id[3]
 	print "\tTipo Sensor: ", my_pack.sensor_type
-	print "\tDato: ", my_pack.data """
+	print "\tDato: ", my_pack.data
 
 	#my_pack.sensor_type = 0x00
 
@@ -135,20 +153,42 @@ def checkResponse(data_packed):
 		print("-"*30)
 		return 1
 
-while True:
+def saveData():
 
-	crearDato()
-	sending_package = packageConstructor()
+	global saved_data
+	global my_queue
+	
+	saved_data[:] = []
+	i = 0
 
+	while i < my_queue.qsize():
+
+		sensor_data = my_queue.get_nowait()
+		saved_data.append(sensor_data)
+		i += 1
+
+try:
 	while True:
-		sock.sendto(sending_package, (UDP_IP, UDP_PORT))
-		timeout = select.select([sock], [], [], 5)
 
-		if timeout[0]:
-			data_packed, address = sock.recvfrom(1024)
-			package_state = checkResponse(data_packed)
+		crearDato()
+		sending_package = packageConstructor()
 
-			if package_state == 0:
-				break
-		else:
-			print("Timeout reached. Sending package again.")
+		while True:
+			sock.sendto(sending_package, (UDP_IP, UDP_PORT))
+			timeout = select.select([sock], [], [], 5)
+
+			if timeout[0]:
+				data_packed, address = sock.recvfrom(1024)
+				package_state = checkResponse(data_packed)
+
+				if package_state == 0:
+					break
+			else:
+				print("Timeout reached. Sending package again.")
+			if my_queue_max_size < (my_queue.qsize() + 5):
+				saveData()
+				queue_overflow = True
+
+		time.sleep(3)
+except KeyboardInterrupt:
+	print("\nClient shutdown.")
