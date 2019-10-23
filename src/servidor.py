@@ -12,9 +12,7 @@ sock.bind((UDP_IP, UDP_PORT))
 
 buzon = SYSV.Queue(36)
 paquetes_recibidos = []
-msgType_actual = 2
-sensor_ids_reconocidos = []
-msgType_designados = []
+
 
 sensor_grupo = {
 	1: 'Whitenoise',
@@ -32,7 +30,10 @@ tipo_sensor = {
 	3: 'Fotoresistor',
 	4: 'Shock',
 	5: 'Touch',
-	6: 'Humedad/Temperatura'
+	6: 'Humedad',
+	7: 'Big Sound',
+	8: 'Temperatura',
+	9: 'Ultrasonico'
 }
 
 def crearPaqueteBuey(random_id,sensor_id):
@@ -48,10 +49,11 @@ def crearPaqueteBuey(random_id,sensor_id):
 
 def pasarDatosAlBuzon(paquete):
 
-	buzon.put([paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],paquete[7]], block=True, msg_type = msgType_designados[sensor_ids_reconocidos.index(sensor_id)])
+	buzon.put([paquete[2],paquete[3],paquete[4],paquete[5],paquete[1],paquete[7]], block=True )
 
-	print "Mensaje con datos recibido.\nEnviado al interpretador."
+	print "Mensaje con datos recibido.\nEnviado a la interfaz para ser almacenada."
 	print "Sensor de tipo: ", tipo_sensor[paquete[6]]
+	print "Dato: ", paquete[7]
 	print("-"*30)
 
 def esKeepAlive(tipo):
@@ -64,6 +66,17 @@ def desempacarFloat_o_Int(data_packed):
 	paquete = struct.unpack('BIBBBBBf', data_packed)
 	if(paquete[6] == 0x07 or paquete[6] == 0x09):
 		paquete = struct.unpack('BIBBBBBi', data_packed)
+	elif(paquete[6] == 0x06 or paquete[6] == 0x08):
+		paquete = struct.unpack('BIBBBBBf', data_packed)
+	else:
+		datoByte = bytearray(1)
+		if(paquete[7]):
+			datoByte[0] = 0x01
+		else:
+			datoByte[0] = 0x00
+		nuevoPaquete = struct.pack('BIBBBBBB', paquete[0],paquete[1],paquete[2],paquete[3],paquete[4],paquete[5],paquete[6],datoByte[0])
+		paquete = struct.unpack('BIBBBBBB', nuevoPaquete)
+
 	print ("-"*30)
 	print "Paquete recibido, desempacando..."
 	print (" ")
