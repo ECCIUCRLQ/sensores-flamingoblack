@@ -2,7 +2,6 @@
 import os
 import time
 import sys
-import random
 import threading
 import administradorMem
 import struct
@@ -91,7 +90,7 @@ class threadsInterface(threading.Thread):
                 else:
 
                     lock.acquire()
-                    print ("No hay pedidos del graficador (" + my_name + ")\n")
+                    print ("No hay pedidos del graficador\n")
                     lock.release()
                 
                 time.sleep(2)
@@ -191,11 +190,11 @@ def recover_data_from_memory(sensor_id):
 
             if data[3] == 5:
 
-                all_data = memory_admin.obtenerDatos(1, num_pages)
+                all_data = memory_admin.obtenerDatos(1, num_pages, data[2], data[4])
 
             else:
 
-                all_data = memory_admin.obtenerDatos(0, num_pages)
+                all_data = memory_admin.obtenerDatos(0, num_pages, data[2], data[4])
 
             page_file.close()
             return all_data
@@ -291,9 +290,17 @@ def save_data(key, data_to_be_saved):
 
     else:
 
-        sensor_data_bytes = struct.pack("f", data_to_be_saved[1])
-        data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
-                                sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
+        if data[4] == 0: 
+            
+            sensor_data_bytes = struct.pack("I", data_to_be_saved[1])
+            data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
+                                    sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
+        
+        else: 
+            
+            sensor_data_bytes = struct.pack("f", data_to_be_saved[1])
+            data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
+                                    sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
 
     if data[3] == 5:
 
@@ -315,7 +322,8 @@ def update_page_table(update_page, this_page):
     if(update_page):
 
         if(os.path.isfile("PageTableIndex.csv")):
-            print ("Remuevo")
+
+            print ("Remuevo tabla de páginas vieja\n")
             os.remove("PageTableIndex.csv")
 
         page_file = open("PageTableIndex.csv", "w+")
@@ -390,18 +398,18 @@ def main():
 
 sensor_manager = {
     # key: [primera vez, página actual, por donde va en la página, tamaño del dato del sensor]
-    "1001": [False, -1, -1, 5],
-    "1002": [False, -1, -1, 5],
-    "2001": [False, -1, -1, 5],
-    "2002": [False, -1, -1, 5],
-    "3001": [False, -1, -1, 5],
-    "3002": [False, -1, -1, 5],
-    "4001": [False, -1, -1, 5],
-    "4002": [False, -1, -1, 5],
-    "5001": [False, -1, -1, 5],
-    "5002": [False, -1, -1, 8],
-    "6001": [False, -1, -1, 8],
-    "6002": [False, -1, -1, 8]
+    "1001": [False, -1, -1, 5, 2],
+    "1002": [False, -1, -1, 5, 2],
+    "2001": [False, -1, -1, 5, 2],
+    "2002": [False, -1, -1, 5, 2],
+    "3001": [False, -1, -1, 5, 2],
+    "3002": [False, -1, -1, 5, 2],
+    "4001": [False, -1, -1, 5, 2],
+    "4002": [False, -1, -1, 5, 2],
+    "5001": [False, -1, -1, 5, 2],
+    "5002": [False, -1, -1, 8, 1],
+    "6001": [False, -1, -1, 8, 0],
+    "6002": [False, -1, -1, 8, 0]
 }
 
 main()
