@@ -10,7 +10,7 @@ UDP_PORT = 10001
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
 
-buzon = SYSV.Queue(36)
+buzon = SYSV.Queue(14)
 paquetes_recibidos = []
 
 
