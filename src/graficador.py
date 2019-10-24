@@ -217,7 +217,7 @@ def main():
         # print("Data recieved " + str(datos1) +"\n")
         if(sys.argv[1] == "Lineas"):
         #------Parte de grafico de linea continua de dato/tiempo---------
-            if sys.argv[2] == "5002" or sys.argv[2] == "6001" or sys.argv[2] == "6002":
+            if sys.argv[2] == "5002" or sys.argv[2] == "5003" or sys.argv[2] == "6001" or sys.argv[2] == "6002":
                 datos_value = []
                 datos_time = []
                 datos_time, datos_value = separate_values(datos1)
@@ -226,7 +226,7 @@ def main():
                     tiempo = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime(datos_time[i])) 
                     datos_time[i] = tiempo
                 
-                if sys.argv[2] == "5002":
+                if sys.argv[2] == "5002" or sys.argv[2] == "5003":
                     for i in range(len(datos_value)):
                         valor = round(datos_value[i], 1)
                         datos_value[i] = valor

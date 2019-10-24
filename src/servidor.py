@@ -4,8 +4,8 @@ import struct
 import time
 from ipcqueue import sysvmq as SYSV
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 10001
+UDP_IP = "10.1.137.192"
+UDP_PORT = 10002
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
