@@ -29,7 +29,9 @@ def count_bins(min_meas, max_meas):
         bin_max = min_meas + (i + 1)*bin_width
         bin_maxes.append(bin_max)
         bin_counts.append(0)
-    return bin_maxes, bin_counts
+    print("bin_maxes " + str(bin_maxes) +"\n")
+    print("bin_counts " + str(bin_counts) +"\n")
+    return bin_counts, bin_maxes
 
 def count_data_per_bin(datos, bin_maxes, bin_counts, min_meas):
     last_bin = 0
@@ -87,6 +89,30 @@ def autolabel(rects, ax):
                     textcoords="offset points",
                     ha='center', va='bottom')
 
+def grafic_bars_single(datos1):
+    min_meas = 0
+    max_meas = 0
+    bin_counts = []
+    bin_maxes = []
+    datos_time = []
+    datos_value = []
+
+    datos_time, datos_value  = separate_values(datos1)
+    min_meas = datos_time[0]
+    max_meas = datos_time[len(datos_time)-1]
+    bin_counts, bin_maxes = count_bins(min_meas, max_meas)
+    print("bin_maxes in method " + str(bin_maxes) +"\n")
+    print("bin_counts in method " + str(bin_counts) +"\n")
+    bin_counts = count_data_per_bin(datos_value, bin_maxes, bin_counts, min_meas)
+
+    ind = np.arange(bin_count)                  # la localizacion en X de las barras
+    width = 0.5                                 # el ancho de las barras
+    barras = plt.bar(ind, bin_counts, width)    # crea las barras con los conteos de rangos
+    plt.xlabel('Rangos')                        # titulo del eje X
+    plt.xticks(ind)                             # valores en el eje X
+    plt.ylabel('Frecuencias')                   # titulo del eje Y
+    plt.title('Histograma')                     # titulo del grafico
+    plt.show()                                  # grafica
 
 def grafic_bars_comparative(datos1, datos2):
     min_meas = 0
@@ -116,6 +142,9 @@ def grafic_bars_comparative(datos1, datos2):
 
     bin_count1 = count_data_per_bin(datos_value1, bin_maxes, bin_count, min_meas)
     bin_count2 = count_data_per_bin(datos_value2, bin_maxes, bin_count, min_meas)
+
+    print("bin_count1 " + str(bin_count1) +"\n")
+    print("bin_count2 " + str(bin_count2) +"\n")
 
     x = np.arange(len(bin_maxes))  # the label locations
     width = 0.35  # the width of the bars
