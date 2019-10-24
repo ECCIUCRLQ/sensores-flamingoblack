@@ -35,7 +35,7 @@ def count_bins(min_meas, max_meas, datos):
 def count_data_per_bin(datos, bin_maxes, bin_count, min_meas, ):
     last_bin = 0
     for i in range(bin_count):
-        for j in range(datos.length()):
+        for j in range(len(datos)):
             if(datos[j]>last_bin and datos[j]<bin_maxes[i]):
                 bin_counts[i] +=1
             elif (datos[j]>bin_maxes[i]):
@@ -57,7 +57,7 @@ def separate_values(values_mixed):
     value_data = []
     t_value = 0
     d_value = 1
-    while(d_value<values_mixed.length()):
+    while(d_value<len(values_mixed)):
         value_time.apend(values_mixed[t_value])
         t_value = t_value + 2
         value_data.append(values_mixed[d_value])

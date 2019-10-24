@@ -81,7 +81,7 @@ class threadsInterface(threading.Thread):
                     lock.acquire()
 
                     all_sensor_data = recover_data_from_memory(plotter_sensor_id)
-                    plotter_queue.put("Datos se estan mandado\n", msg_type = 2)
+                   # plotter_queue.put("Datos se estan mandado\n", msg_type = 2)
                     send_through_queue(all_sensor_data)
                     print (str(len(all_sensor_data)) + " datos se han mandado al graficador\n")
 
