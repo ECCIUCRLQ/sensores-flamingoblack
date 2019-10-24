@@ -21,14 +21,20 @@ memory_admin = administradorMem.AdministradorMem()  # instancia del administrado
 
 class threadsInterface(threading.Thread):
     
+    def __init__(self, name):
+
+        threading.Thread.__init__(self)
+        self.name = name
+        self.kill = False
+
     def run(self):
 
-        my_name = self.getName()
+        my_name = self.name
         global first_time
 
         if(my_name == "inter"):
 
-            while True:
+            while not self.kill:
 
                 data = obtain_data_from_recolector()
 
@@ -72,7 +78,7 @@ class threadsInterface(threading.Thread):
 
         else:
 
-            while True:
+            while not self.kill:
 
                 plotter_sensor_id = check_plotter_request()
             
@@ -124,14 +130,48 @@ def check_if_data_exists(plot_id):
     sensor_id = str(plot_id)
     data = sensor_manager[sensor_id]
 
-    if data[0] == False:
+    if data[0] == True:
 
-        print ("Data does not exist for  this sensor\n")
-        return 0
+        return 1
 
     else:
 
-        return 1
+        print ("Data does not exist\n")
+        return 0
+
+    '''
+
+    Futuro uso. Falta hacer arreglos en el administrador de memoria para poder utilizar este recurso.
+
+    if(os.path.isfile("offsets.csv")):
+
+        offset_file = open("offsets.csv", "r+")
+        line = offset_file.readline()
+    
+        while line:
+
+            if(line.find(sensor_id) != -1):
+                
+                line.strip("\n")
+                offset_csv = line.split(",")
+                
+                if len(offset_csv) == 2:
+                
+                    offset_csv.pop(0)
+                    offset = map(int, offset_csv)
+                    data[2] = offset
+                    offset_file.close()
+                    return 1
+
+                else:
+
+                    offset_file.close()
+                    print ("Data does not exist\n")
+                    return 0
+                
+            line = offset_file.readline()
+
+    '''
 
 # -----------------
 # Revisa si el recolector ha mandado datos
@@ -411,13 +451,67 @@ def check_registered_sensor(sensor):
     sensor_manager[my_key] = [False, -1, -1, data_size]
     return
 
+def threads_alive(threads):
+
+    if threads[0].is_alive() and threads[1].is_alive():
+
+        return True
+
+    else:
+
+        return False
+
+# -----------------
+# Main basico del programa
+# -----------------
+
 def main():
+
+    threads = []
 
     threadinter = threadsInterface(name = "inter")
     threadplot = threadsInterface(name = "plot")
 
     threadinter.start()
     threadplot.start()
+
+    threads.append(threadinter)
+    threads.append(threadplot)
+
+    while threads_alive(threads):
+
+        try:
+
+            [thread.join(1) for thread in threads
+             if thread is not None and thread.is_alive()]
+
+        except KeyboardInterrupt:
+
+            print ("Killing threads\n")
+            threadinter.kill = True
+            threadplot.kill = True
+            memory_admin.salvarMemPrincipal()
+
+            '''
+
+            Futuro uso. Permite recuperar los offsets de la utlima pagina que estaba llenando un sensor.
+
+            if(os.path.isfile("offsets.csv")):
+
+                os.remove("offsets.csv")
+
+            offset_file = open("offsets.csv", "w+")
+
+            for key in sensor_manager.keys():
+
+                data = sensor_manager[key]
+                offset_file.write(key + "," + str(data[2]) + "\n")
+
+            offset_file.close()
+
+            '''
+
+    print ("Exiting main thread\n")
 
 # -----------------
 # Hash que mantiene todos los metadatos de los sensores

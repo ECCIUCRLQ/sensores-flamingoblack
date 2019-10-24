@@ -269,4 +269,4 @@ class AdministradorMem:
             elif i in self.colaPaginas[1]:
                 self.enviarPagMemSecundaria(1,i)
 
-        print("Todas las paginas en memoria principal fueron guardadas en memoria secundaria.")
+        print("Todas las paginas en memoria principal fueron guardadas en memoria secundaria\n")
