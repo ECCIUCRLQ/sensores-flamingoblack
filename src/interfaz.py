@@ -172,9 +172,10 @@ def send_through_queue(data):
 # Luego llama a meotdo del administrador que devuelve todos los datos de las respectivas paginas
 # -----------------
 
-def recover_data_from_memory(sensor_id):
+def recover_data_from_memory(plot_id):
 
-    data = sensor_manager[sensor_id]
+    sensor_id = str(plot_id)
+    data = sensor_manager[str(sensor_id)]
     page_file = open("PageTableIndex.csv", "r+")
     line = page_file.readline()
     
