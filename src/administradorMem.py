@@ -9,6 +9,9 @@ class AdministradorMem:
         self.contadorPaginas = self.cargarContPaginas()
         self.tablaPaginas = self.cargarTablaPaginas()
         self.colaPaginas = [[],[]]
+        
+        if not os.path.isdir("paginas"):
+            os.makedirs("paginas")
 
     def pagEstaEnPrincipal(self,numPagina):
         esta = True
