@@ -35,8 +35,9 @@ def count_bins(min_meas, max_meas):
 
 def count_data_per_bin(datos, bin_maxes, bin_counts, min_meas):
     last_bin = 0
-    for i in range(bin_count):
-        for j in range(len(datos)):
+    for i in range(len(datos)):
+        for j in range(bin_count):
+            if(datos[i]>)
             if(datos[j]>last_bin and datos[j]<bin_maxes[i]):
                 bin_counts[i] +=1
             elif (datos[j]>bin_maxes[i]):
@@ -103,7 +104,7 @@ def grafic_bars_single(datos1):
     bin_counts, bin_maxes = count_bins(min_meas, max_meas)
     print("bin_maxes in method " + str(bin_maxes) +"\n")
     print("bin_counts in method " + str(bin_counts) +"\n")
-    bin_counts = count_data_per_bin(datos_value, bin_maxes, bin_counts, min_meas)
+    bin_counts = count_data_per_bin(datos_time, bin_maxes, bin_counts, min_meas)
 
     ind = np.arange(bin_count)                  # la localizacion en X de las barras
     width = 0.5                                 # el ancho de las barras
@@ -140,8 +141,8 @@ def grafic_bars_comparative(datos1, datos2):
 
     bin_count, bin_maxes = count_bins(min_meas, max_meas)
 
-    bin_count1 = count_data_per_bin(datos_value1, bin_maxes, bin_count, min_meas)
-    bin_count2 = count_data_per_bin(datos_value2, bin_maxes, bin_count, min_meas)
+    bin_count1 = count_data_per_bin(datos_time1, bin_maxes, bin_count, min_meas)
+    bin_count2 = count_data_per_bin(datos_time2, bin_maxes, bin_count, min_meas)
 
     print("bin_count1 " + str(bin_count1) +"\n")
     print("bin_count2 " + str(bin_count2) +"\n")
