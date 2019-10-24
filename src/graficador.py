@@ -7,12 +7,14 @@ from ipcqueue import sysvmq as SYSV
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 
 buzon = SYSV.Queue(15)
 
 datos1 = []
 datos2 = []
 bin_count = 5
+siguiente_dato = 0
 
 
 def convert_time(now):
@@ -33,15 +35,21 @@ def count_bins(min_meas, max_meas, datos):
 def count_data_per_bin(datos, bin_maxes, bin_count, min_meas, ):
     last_bin = 0
     for i in range(bin_count):
-        for j in range(datos.length()):
+        for j in range(len(datos)):
             if(datos[j]>last_bin and datos[j]<bin_maxes[i]):
                 bin_counts[i] +=1
             elif (datos[j]>bin_maxes[i]):
                 break
     last_bin = bin_maxes[i]
 
-def graphic_bars_two_sensors():
-
+def grafic_continious_lines_data_time():
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=datos1, y=datos2, name='Linea dato/tiempo',
+                         line=dict(color='firebrick', width=4)))
+    fig.update_layout(title='Graficador del sensor 0x06',
+                   xaxis_title='Fecha',
+                   yaxis_title='Datos')
+    fig.show()
 
 
 def separate_values(values_mixed):
@@ -49,11 +57,13 @@ def separate_values(values_mixed):
     value_data = []
     t_value = 0
     d_value = 1
-    while(d_value<values_mixed.length()):
-        value_time.apend(values_mixed[t_value])
+    while(d_value<len(values_mixed)):
+        value_time.append(values_mixed[t_value])
         t_value = t_value + 2
         value_data.append(values_mixed[d_value])
         d_value = d_value + 2
+    print("Time " + str(value_time) +"\n")
+    print("Data " + str(value_data) +"\n")
     return value_time, value_data
 
 
@@ -61,7 +71,7 @@ def read_data():
     dato = buzon.get(block = True, msg_type=2)
     while True:
         siguiente_dato = buzon.get(block = True, msg_type=2)
-        if(Siguiente_dato != 1):
+        if(siguiente_dato != 1):
             print("Data recieved " + str(dato) +"\n")
             dato.append(siguiente_dato)
         else:
@@ -75,6 +85,11 @@ def main():
         datos1 = read_data()
         print("Data recieved " + str(datos1) +"\n")
             #print 'Parent %d got "%s" at %s' % (os.getpid(), line, time.time( ))
+        if sys.argv[2] == "6001" or sys.argv[2] == "0x08" or sys.argv[2] == "0x09" or sys.argv[2] == "0x010":
+            datos_value = []
+            datos_time = []
+            datos_value, datos_time = separate_values(datos1)
+            grafic_continious_lines_data_time()
     elif(len(sys.argv)==4):
         buzon.put(sys.argv[2],block=True)
         read_data()
