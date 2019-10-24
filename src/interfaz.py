@@ -103,13 +103,35 @@ def check_plotter_request():
 
     try:
         sensor_id = plotter_queue.get_nowait()
+        exists = check_if_data_exists(sensor_id)
 
-        if (sensor_id == 1):
+        if exists == 0:
             return 0
-            
+
+        if sensor_id == 1:
+            return 0
+
         return sensor_id
     except:
         return 0
+
+# -----------------
+# Revisa si el sensor que acaba de pedir datos en realidad ha enviado datos
+# -----------------
+
+def check_if_data_exists(plot_id):
+
+    sensor_id = str(plot_id)
+    data = sensor_manager[sensor_id]
+
+    if data[0] == False:
+
+        print ("Data does not exist for  this sensor\n")
+        return 0
+
+    else:
+
+        return 1
 
 # -----------------
 # Revisa si el recolector ha mandado datos
