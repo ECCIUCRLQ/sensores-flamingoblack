@@ -166,7 +166,13 @@ def main():
             for i in range(len(datos_time)):
                 tiempo = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime(datos_time[i])) 
                 datos_time[i] = tiempo
-            grafic_continious_lines_data_time(datos_value, datos_time, sys.argv[2])
+            
+            if sys.argv[2] == "5002":
+                for i in range(len(datos_value)):
+                    valor = round(datos_value[i], 1)
+                    datos_value[i] = valor
+            print(datos_value)
+            grafic_continious_lines_data_time(datos_value, datos_time, sys.argv[2])    
         
         #------Parte de grafico de linea continua de dato/tiempo---------
         
