@@ -42,12 +42,13 @@ def count_data_per_bin(datos, bin_maxes, bin_count, min_meas, ):
                 break
     last_bin = bin_maxes[i]
 
-def grafic_continious_lines_data_time():
+def grafic_continious_lines_data_time(datos_value, datos_time, nombreSensorParametro):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=datos1, y=datos2, name='Linea dato/tiempo',
+    fig.add_trace(go.Scatter(x=datos_time, y=datos_value, name='Linea dato/tiempo',
                          line=dict(color='firebrick', width=4)))
-    fig.update_layout(title='Graficador del sensor 0x06',
-                   xaxis_title='Fecha',
+    nombreGraficador = "Graficador del sensor " + nombreSensorParametro 
+    fig.update_layout(title= nombreGraficador,
+                   xaxis_title='Fecha y hora',
                    yaxis_title='Datos')
     fig.show()
 
@@ -85,11 +86,21 @@ def main():
         datos1 = read_data()
         print("Data recieved " + str(datos1) +"\n")
             #print 'Parent %d got "%s" at %s' % (os.getpid(), line, time.time( ))
-        if sys.argv[2] == "6001" or sys.argv[2] == "0x08" or sys.argv[2] == "0x09" or sys.argv[2] == "0x010":
+        
+        #------Parte de grafico de linea continua de dato/tiempo---------
+        if sys.argv[2] == "5002" or sys.argv[2] == "6001" or sys.argv[2] == "6002":
             datos_value = []
             datos_time = []
-            datos_value, datos_time = separate_values(datos1)
-            grafic_continious_lines_data_time()
+            datos_time, datos_value = separate_values(datos1)
+            #conversion de datos de tiempo a fecha legible
+            for i in range(len(datos_time)):
+                tiempo = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime(datos_time[i])) 
+                datos_time[i] = tiempo
+            grafic_continious_lines_data_time(datos_value, datos_time, sys.argv[2])
+        
+        #------Parte de grafico de linea continua de dato/tiempo---------
+        
+
     elif(len(sys.argv)==4):
         buzon.put(sys.argv[2],block=True)
         read_data()
