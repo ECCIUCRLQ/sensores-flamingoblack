@@ -19,23 +19,29 @@ def convert_time(now):
     value = now.strftime.tm_min(now)
     return value
 
-def count_data_per_bin(min_meas, max_meas, datos):
+def count_bins(min_meas, max_meas, datos):
     bins_width = (max_meas - min_meas)/bin_count
     bin_maxes = [] 
     bin_counts = []
-    last_bin = 0
+    
     for i in range(bin_count):
         bin_max = min_meas + (i + 1)*bin_width
         bin_maxes.append(bin_max)
         bin_counts.append(0)
-        for j in range(datos.length()):
-            if(datos[j]>last_bin and datos[j]<bin_max):
-                bin_counts[i] +=1
-            elif (datos[j]>bin_max):
-                break
-        last_bin = bin_max
-        
     return bin_maxes, bin_counts
+
+def count_data_per_bin(datos, bin_maxes, bin_count, min_meas, ):
+    last_bin = 0
+    for i in range(bin_count):
+        for j in range(datos.length()):
+            if(datos[j]>last_bin and datos[j]<bin_maxes[i]):
+                bin_counts[i] +=1
+            elif (datos[j]>bin_maxes[i]):
+                break
+    last_bin = bin_maxes[i]
+
+def graphic_bars_two_sensors():
+
 
 
 def separate_values(values_mixed):
@@ -43,33 +49,30 @@ def separate_values(values_mixed):
     value_data = []
     t_value = 0
     d_value = 1
-    for value in values_mixed:
+    while(d_value<values_mixed.length()):
         value_time.apend(values_mixed[t_value])
         t_value = t_value + 2
         value_data.append(values_mixed[d_value])
         d_value = d_value + 2
     return value_time, value_data
 
-def graphic_bars_two_sensors():
-
-
-
-
 
 def read_data():
+    dato = buzon.get(block = True, msg_type=2)
     while True:
-        dato = buzon.get(block = True, msg_type=2)
-        if(dato != 1):
+        siguiente_dato = buzon.get(block = True, msg_type=2)
+        if(Siguiente_dato != 1):
             print("Data recieved " + str(dato) +"\n")
-            datos1.append(dato)
+            dato.append(siguiente_dato)
         else:
             break
+    return dato
 
 
 def main():
     if(len(sys.argv)==3):
         buzon.put(sys.argv[2],block=True)
-        read_data()
+        datos1 = read_data()
         print("Data recieved " + str(datos1) +"\n")
             #print 'Parent %d got "%s" at %s' % (os.getpid(), line, time.time( ))
     elif(len(sys.argv)==4):
