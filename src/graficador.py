@@ -80,6 +80,19 @@ def grafic_continious_lines_data_time(datos_value, datos_time, nombreSensorParam
                    yaxis_title='Datos')
     fig.show()
 
+def grafic_comparative_continious_lines_mov_light(datos_time1, datos_value1, datos_time2, datos_value2, nombreSensorParametro1, nombreSensorParametro2):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=datos_time1, y=datos_value1, name='Linea movimiento',
+                         line=dict(color='firebrick', width=4)))
+    fig.add_trace(go.Scatter(x=datos_time2, y=datos_value2, name='Linea luz',
+                         line=dict(color='royalblue', width=4)))
+
+    nombreGraficador = "Graficador del sensor " + nombreSensorParametro1 + nombreSensorParametro2 
+    fig.update_layout(title= nombreGraficador,
+                   xaxis_title='Fecha y hora',
+                   yaxis_title='Datos')
+    fig.show()
+
 def autolabel(rects, ax):
     """Attach a text label above each bar in *rects*, displaying its height."""
     for rect in rects:
@@ -214,7 +227,30 @@ def main():
         buzon.put(sys.argv[3],block=True)
         datos2 = read_data()
         print("Data recieved 2 " + str(datos2) +"\n")
-        grafic_bars_comparative(datos1, datos2)
+
+        #------Parte de grafico de linea comparativa continua de movimiento y luz---------
+        if sys.argv[1] == "lineaComparativaContinua" and (sys.argv[2] == "2001" and sys.argv[3] == "2002"):
+            datos_time1 = []
+            datos_value1 = []
+            datos_time2 = []
+            datos_value2 = []
+            datos_time1, datos_value1 = separate_values(datos1)
+            datos_time2, datos_value2 = separate_values(datos2)
+
+            for i in range(len(datos_time1)):
+                tiempo = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime(datos_time1[i])) 
+                datos_time1[i] = tiempo
+
+            for j in range(len(datos_time2)):
+                tiempo = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime(datos_time2[j])) 
+                datos_time2[j] = tiempo
+            
+            grafic_comparative_continious_lines_mov_light(datos_time1, datos_value1, datos_time2, datos_value2, sys.argv[2], sys.argv[3])
+
+        #------Parte de grafico de linea comparativa continua de movimiento y luz---------        
+        else:
+            grafic_bars_comparative(datos1, datos2)
+            
     else:
         print("El ingreso de datos debe ser de la siguiente manera: \n")
         print("Nombre del archivo  'graficador.py' \n")
