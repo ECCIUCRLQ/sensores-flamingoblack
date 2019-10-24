@@ -14,25 +14,24 @@ buzon = SYSV.Queue(15)
 datos1 = []
 datos2 = []
 bin_count = 5
-siguiente_dato = 0
+#siguiente_dato = 0
 
 
 def convert_time(now):
     value = now.strftime.tm_min(now)
     return value
 
-def count_bins(min_meas, max_meas, datos):
-    bins_width = (max_meas - min_meas)/bin_count
+def count_bins(min_meas, max_meas):
+    bin_width = (max_meas - min_meas)/bin_count
     bin_maxes = [] 
     bin_counts = []
-    
     for i in range(bin_count):
         bin_max = min_meas + (i + 1)*bin_width
         bin_maxes.append(bin_max)
         bin_counts.append(0)
     return bin_maxes, bin_counts
 
-def count_data_per_bin(datos, bin_maxes, bin_count, min_meas, ):
+def count_data_per_bin(datos, bin_maxes, bin_counts, min_meas):
     last_bin = 0
     for i in range(bin_count):
         for j in range(len(datos)):
@@ -41,6 +40,7 @@ def count_data_per_bin(datos, bin_maxes, bin_count, min_meas, ):
             elif (datos[j]>bin_maxes[i]):
                 break
     last_bin = bin_maxes[i]
+    return bin_counts
 
 def grafic_continious_lines_data_time(datos_value, datos_time, nombreSensorParametro):
     fig = go.Figure()
@@ -67,6 +67,77 @@ def separate_values(values_mixed):
     print("Data " + str(value_data) +"\n")
     return value_time, value_data
 
+def grafic_continious_lines_data_time(datos_value, datos_time, nombreSensorParametro):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=datos_time, y=datos_value, name='Linea dato/tiempo',
+                         line=dict(color='firebrick', width=4)))
+    nombreGraficador = "Graficador del sensor " + nombreSensorParametro 
+    fig.update_layout(title= nombreGraficador,
+                   xaxis_title='Fecha y hora',
+                   yaxis_title='Datos')
+    fig.show()
+
+def autolabel(rects, ax):
+    """Attach a text label above each bar in *rects*, displaying its height."""
+    for rect in rects:
+        height = rect.get_height()
+        ax.annotate('{}'.format(height),
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 3),  # 3 points vertical offset
+                    textcoords="offset points",
+                    ha='center', va='bottom')
+
+
+def grafic_bars_comparative(datos1, datos2):
+    min_meas = 0
+    max_meas = 0
+    bin_count = []
+    bin_maxes = []
+    datos_time1 = []
+    datos_value1 = []
+    datos_time2 = []
+    datos_value2 = []
+    
+    datos_time1, datos_value1  = separate_values(datos1)
+    datos_value2, datos_time2 = separate_values(datos2)
+
+    if(datos_time1[0]<datos_time2[0]):
+        min_meas = datos_time2[0]
+    else:
+        min_meas = datos_time1[0]
+
+    if(datos_time1[len(datos_time1)-1]<datos_time2[len(datos_time2)-1]):
+        max_meas = datos_time2[len(datos_time2)-1]
+    else:
+        max_meas = datos_time1[len(datos_time1)-1]
+
+
+    bin_count, bin_maxes = count_bins(min_meas, max_meas)
+
+    bin_count1 = count_data_per_bin(datos_value1, bin_maxes, bin_count, min_meas)
+    bin_count2 = count_data_per_bin(datos_value2, bin_maxes, bin_count, min_meas)
+
+    x = np.arange(len(bin_maxes))  # the label locations
+    width = 0.35  # the width of the bars
+
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x - width/2, bin_count1, width, label='Sensor 1')
+    rects2 = ax.bar(x + width/2, bin_count2, width, label='Sensor 2')
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Segundos')
+    ax.set_title('Grafico comparativo')
+    ax.set_xticks(x)
+    ax.set_xticklabels(bin_maxes)
+    ax.legend()
+
+    autolabel(rects1, ax)
+    autolabel(rects2, ax)
+
+    fig.tight_layout()
+
+    plt.show()
+
 
 def read_data():
     dato = buzon.get(block = True, msg_type=2)
@@ -85,7 +156,6 @@ def main():
         buzon.put(sys.argv[2],block=True)
         datos1 = read_data()
         print("Data recieved " + str(datos1) +"\n")
-            #print 'Parent %d got "%s" at %s' % (os.getpid(), line, time.time( ))
         
         #------Parte de grafico de linea continua de dato/tiempo---------
         if sys.argv[2] == "5002" or sys.argv[2] == "6001" or sys.argv[2] == "6002":
@@ -103,16 +173,18 @@ def main():
 
     elif(len(sys.argv)==4):
         buzon.put(sys.argv[2],block=True)
-        read_data()
-            
+        datos1 = read_data()
+        print("Data recieved 1 " + str(datos1) +"\n")
         buzon.put(sys.argv[3],block=True)
-        read_data()
+        datos2 = read_data()
+        print("Data recieved 2 " + str(datos2) +"\n")
+        grafic_bars_comparative(datos1, datos2)
     else:
         print("El ingreso de datos debe ser de la siguiente manera: \n")
-        print("Nombre del archivo \n")
-        print("Tipo de grafico. \n")
-        print("Sensor Id 1 \n")
-        print("Sensor Id 2 (si es necesario) \n")
+        print("Nombre del archivo  'graficador.py' \n")
+        print("Tipo de grafico. 'Lineas' o 'barras'. \n")
+        print("Sensor Id 1 Por ejemplo '2001' \n")
+        print("Sensor Id 2 (si es necesario) Por ejemplo '2002' \n")
 
 
 main()

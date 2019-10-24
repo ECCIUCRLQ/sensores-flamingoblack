@@ -62,18 +62,20 @@ def whitenoise():
 	my_pack.data = 1.0
 
 def flamingoblack():
-	dato = 1.0
+	#dato = 1.0
 	if(my_pack.sensor_id[3] == 0x01):
 		my_pack.sensor_type = 0x01
 		my_pack.data = 1.0
 	elif(my_pack.sensor_id[3] == 0x02):
 		my_pack.sensor_type = 0x03
-		if(dato == 1):
+	my_pack.data = 1.0
+	
+""" 		if(dato == 1):
 			my_pack.data = 0
 			dato = 0
 		else:
 			my_pack.data = 1.0
-			dato = 1.0
+			dato = 1.0 """
 
 def gisso():
 	if(my_pack.sensor_id[3] == 0x01):
