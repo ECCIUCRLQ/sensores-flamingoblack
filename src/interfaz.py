@@ -175,7 +175,7 @@ def send_through_queue(data):
 def recover_data_from_memory(plot_id):
 
     sensor_id = str(plot_id)
-    data = sensor_manager[str(sensor_id)]
+    data = sensor_manager[sensor_id]
     page_file = open("PageTableIndex.csv", "r+")
     line = page_file.readline()
     
