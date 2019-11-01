@@ -92,14 +92,14 @@ def grafic_continious_lines_data_time(datos_value, datos_time, nombreSensorParam
                    yaxis_title='Datos')
     fig.show()
 
-def grafic_comparative_continious_lines_mov_light(datos_time1, datos_value1, datos_time2, datos_value2, nombreSensorParametro1, nombreSensorParametro2):
+def grafic_comparative_continious_lines_mov_light(lista_tiempo_Movimiento, lista_datos_Movimiento, lista_tiempo_Luz, lista_datos_Luz, nombreSensorParametro1, nombreSensorParametro2):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=datos_time1, y=datos_value1, name='Linea movimiento',
+    fig.add_trace(go.Scatter(x=lista_tiempo_Movimiento, y=lista_datos_Movimiento, name='Linea movimiento',
                          line=dict(color='firebrick', width=4)))
-    fig.add_trace(go.Scatter(x=datos_time2, y=datos_value2, name='Linea luz',
+    fig.add_trace(go.Scatter(x=lista_tiempo_Luz, y=lista_datos_Luz, name='Linea luz',
                          line=dict(color='royalblue', width=4)))
 
-    nombreGraficador = "Graficador del sensor " + nombreSensorParametro1 + nombreSensorParametro2 
+    nombreGraficador = "Graficador del sensor " + nombreSensorParametro1 + " y " + nombreSensorParametro2 
     fig.update_layout(title= nombreGraficador,
                    xaxis_title='Fecha y hora',
                    yaxis_title='Datos')
@@ -217,7 +217,7 @@ def main():
         # print("Data recieved " + str(datos1) +"\n")
         if(sys.argv[1] == "Lineas"):
         #------Parte de grafico de linea continua de dato/tiempo---------
-            if sys.argv[2] == "5002" or sys.argv[2] == "5003" or sys.argv[2] == "6001" or sys.argv[2] == "6002":
+            if sys.argv[2] == "5002" or sys.argv[2] == "6001" or sys.argv[2] == "6002":
                 datos_value = []
                 datos_time = []
                 datos_time, datos_value = separate_values(datos1)
@@ -226,7 +226,7 @@ def main():
                     tiempo = time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime(datos_time[i])) 
                     datos_time[i] = tiempo
                 
-                if sys.argv[2] == "5002" or sys.argv[2] == "5003":
+                if sys.argv[2] == "5002":
                     for i in range(len(datos_value)):
                         valor = round(datos_value[i], 1)
                         datos_value[i] = valor
@@ -249,7 +249,7 @@ def main():
         # print("Data recieved 2 " + str(datos2) +"\n")
 
         #------Parte de grafico de linea comparativa continua de movimiento y luz---------
-        if sys.argv[1] == "Lineas" and (sys.argv[2] == "2001" and sys.argv[3] == "2002"):
+        if sys.argv[1] == "Lineas" and ((sys.argv[2] == "2001" and sys.argv[3] == "2002") or (sys.argv[2] == "2002" and sys.argv[3] == "2001")):
             datos_time1 = []
             datos_value1 = []
             datos_time2 = []
