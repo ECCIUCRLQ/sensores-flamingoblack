@@ -19,6 +19,9 @@ FlamingoBlack
 El objetivo de esta etapa es construir una memoria distribuida para el sistema de recolección de datos de sensores del proyecto. La figura 1 muestra los componentes de la red, la topología y los protocolos usados.
 A continuación se describen los requerimientos de esta etapa.
 
+
+![imagen](https://user-images.githubusercontent.com/49280127/68361318-02a57800-00e9-11ea-8cd5-6f8dc0a55831.jpg)
+
 1)	Swapping
 
 
