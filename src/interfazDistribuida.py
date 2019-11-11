@@ -9,15 +9,10 @@ class interface:
 	def __init__(self):
 
 		# Hash que mantiene los metadatos de los nodos
+		# identificador: [ip, puerto, lista con paginas en ese nodo, espacio disponible en el nodo]
+		# 1: [-1, -1, [], -1]
 		self.node_manager = {
 
-			# la hash crece conforme llegan mas nodos
-			# identificador: [ip, puerto, lista con paginas en ese nodo, espacio disponible en el nodo]
-
-			1: [-1, -1, [], -1],
-			2: [-1, -1, [], -1],
-			3: [-1, -1, [], -1],
-			4: [-1, -1, [], -1]
 		}
 
 		# Hash que crecera a medida que lleguen paginas, se asocia pagina:nodo
@@ -28,6 +23,7 @@ class interface:
 		self.active = False
 		self.myIp = "127.0.0.1"
 		self.myPort = 5015
+		self.nodeCounter = 0
 
 	# ------------------
 	# Método que construye el paquete que le va a mandar al nodo de memoria cuando quiera guardar
@@ -125,9 +121,7 @@ class interface:
 							sock_node.close()
 							return reply[1]
 
-			else:
-
-				print ("Page does not exist in any node.")
+		print ("Page does not exist in any node.")
 
 	'''
 
