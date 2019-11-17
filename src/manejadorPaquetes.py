@@ -140,19 +140,19 @@ def desempacar_paquete_guardar_respuesta_ML_ID(paquete, id_page):
 
     if op_code_res == 4:
 
-        print ("Se produjo error al guardar la página")
+        print ("Se produjo error al obtener la página en ID")
         return 1
 
     else:
 
         if id_page_res == id_page:
 
-            print ("Se guardó exitosamente")
+            print ("ID obtuvo página exitosamente")
             return 0
 
         else:
 
-            print ("Se guardó página incorrecta")
+            print ("ID obtuvo página incorrecta")
             return 1
 
 # ------------------------
@@ -168,20 +168,20 @@ def desempacar_paquete_guardar_respuesta_ID_NM(paquete, id_page):
 
     if op_code_res == 4:
 
-        print ("Se produjo error al guardar página")
+        print ("Se produjo error al guardar página en NM")
         return 1
 
     else:
 
         if id_page_res == id_page:
 
-            print ("Se guardó exitosamente")
+            print ("Se guardó exitosamente en NM")
             print ("Espacio disponible en el nodo: " + str(node_size[0]) + " bytes")
             return node_size[0]
 
         else:
 
-            print ("Se guardó página incorrecta")
+            print ("Se guardó página incorrecta en NM")
             return 1
 
 
@@ -224,7 +224,10 @@ def desempacar_paquete_quieroSer(paquete):
 
     else:
 
-        return mac1 | (mac2 << 16), ronda
+        mac = mac1 | (mac2 << 16)
+        print ("Interfaz se ha reportado con su MAC: " + str(mac))
+        print ("Interfaz se ha reportado con ronda: " + str(ronda))
+        return mac, ronda
 
 # ------------------------
 # Método para ID cuando recibe un paquete soy activo
@@ -238,7 +241,7 @@ def desempacar_paquete_soyActivo(paquete):
     if op_code_res == 4:
 
         print ("Se produjo error al iniciarse como activo")
-        return 1
+        return 0
 
     else:
 
@@ -251,7 +254,7 @@ def desempacar_paquete_soyActivo(paquete):
         tamaño_datos2 = filas_tabla2 * 9
         datos_tabla2 = paquete[(3+tamaño_datos1):(3+tamaño_datos1+tamaño_datos2)]
 
-        return filas_tabla1, filas_tabla2, datos_tabla1, datos_tabla2
+        return [filas_tabla1, filas_tabla2, datos_tabla1, datos_tabla2]
 
 # ------------------------
 # Método para ID cuando recibe un paquete keep alive
@@ -296,6 +299,6 @@ def desempacar_paquete_estoyAqui(paquete):
 
     else:
 
-        print ("Nodo se ha reigstrado")
         node_size = struct.unpack("=BI", paquete)
+        print ("Nodo se ha reigstrado, espacio disponible: " + str(node_size[1]) + " bytes")
         return node_size[1]

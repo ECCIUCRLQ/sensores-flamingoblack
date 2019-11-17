@@ -54,40 +54,62 @@ else:
 
     op_code = 2
     id_page = 48
-    size_page = 15
-    data = "x" * 15
-    #data_bytes = bytes(data, 'utf-8')
-    data_bytes = bytearray([1,15,25,35,45])
+    size_page = 11
+    data_bytes = bytearray([1,15,25,35,45,148,250,15,17,24,21])
+
+    # paquete y desempaque estoy aqui
 
     paqueteestoy = manepack.paquete_broadcast_estoyAqui_NM_ID(op_code, 15478)
-
     espacio_nodo = manepack.desempacar_paquete_estoyAqui(paqueteestoy)
-    print (espacio_nodo)
 
-    print ("The MAC address in formatted way is : ", end="") 
-    print (':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) 
-    for ele in range(0,8*6,8)][::-1])) 
+    # paquete y desempaque quier ser
 
     mac_byte = uuid.getnode().to_bytes(6, 'little')
 
     paquete_quiero = manepack.paquete_broadcast_quieroSer_ID_ID(1, mac_byte, 4)
     mac_extraida, ronda = manepack.desempacar_paquete_quieroSer(paquete_quiero)
 
-    print ("MAC obtenida : " + str(mac_extraida))
-    print ("Ronda: " + str(ronda))
+    # paquete y desempaque soyactivo
 
+    datos = []
+    dump1 = bytearray([1,8,0x10,3,2,4])
+    dump2 = bytearray([1,3,2,6,5,7,8,0x10,4])
+    paquetesoy = manepack.paquete_broadcast_soyActivo_ID_ID(op_code, 3, 1, dump1, dump2)
+    datos = manepack.desempacar_paquete_soyActivo(paquetesoy)
+    print (datos)
 
+    # paquete y desempaque keepalive con y sin cambios
 
-    '''
+    paqueteKA = manepack.paquete_broadcast_keepAlive_ID_ID(op_code, 3, 1, dump1, dump2)
+    datos2 = manepack.desempacar_paquete_keepAlive(paqueteKA)
+    print (datos2)
 
-    paquete = manepack.paquete_respuesta_leer(op_code, id_page, data_bytes)
+    paqueteKA = manepack.paquete_broadcast_keepAlive_ID_ID(op_code, 0, 0, 0, 0)
+    datos2 = manepack.desempacar_paquete_keepAlive(paqueteKA)
+    print (datos2)
 
-    print (paquete)
-    print (paquete[0])
-    print (paquete[1])
+    # paquete y desempaque respuesta leer 
 
-    for i in range(2, 7):
+    paqueteresleer = manepack.paquete_respuesta_leer(op_code, id_page, dump1)
+    datos3 = manepack.desempacar_paquete_respuesta_leer(paqueteresleer, id_page, 6)
+    print (datos3)
 
-        print (paquete[i])
+    # paquete y desempaque respuesta guardar ID_NM
 
-    '''
+    paqueteResGuaID_NM = manepack.paquete_respuesta_guardar_ID_NM(op_code, id_page, 1454)
+    datos4 = manepack.desempacar_paquete_guardar_respuesta_ID_NM(paqueteResGuaID_NM, id_page)
+
+    # paquete y desempaque respuesta guardar ML_ID
+
+    paqueteResGuaML_ID = manepack.paquete_respuesta_guardar_ML_ID(op_code, id_page)
+    datos5 = manepack.desempacar_paquete_guardar_respuesta_ML_ID(paqueteResGuaML_ID, id_page)
+
+    # paquete para guardar, tanto en ID como NM
+
+    paqueteGua = manepack.paquete_para_guardar(op_code, id_page, 6, dump1)
+    print (paqueteGua)
+
+    # paquete para leer, tanto en ID como NM
+
+    paqueteLee = manepack.paquete_para_leer(op_code, id_page)
+    print (paqueteLee)
