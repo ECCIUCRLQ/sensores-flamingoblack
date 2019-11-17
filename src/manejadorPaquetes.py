@@ -169,7 +169,7 @@ def desempacar_paquete_guardar_respuesta_ID_NM(paquete, id_page):
     if op_code_res == 4:
 
         print ("Se produjo error al guardar página en NM")
-        return 1
+        return -1
 
     else:
 
@@ -182,7 +182,7 @@ def desempacar_paquete_guardar_respuesta_ID_NM(paquete, id_page):
         else:
 
             print ("Se guardó página incorrecta en NM")
-            return 1
+            return -1
 
 
 # ------------------------
@@ -227,7 +227,7 @@ def desempacar_paquete_quieroSer(paquete):
         mac = mac1 | (mac2 << 16)
         print ("Interfaz se ha reportado con su MAC: " + str(mac))
         print ("Interfaz se ha reportado con ronda: " + str(ronda))
-        return mac, ronda
+        return [mac, ronda]
 
 # ------------------------
 # Método para ID cuando recibe un paquete soy activo

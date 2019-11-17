@@ -3,14 +3,17 @@ import time
 import os
 import socket
 import struct
+import uuid
+import threading
+import manejadorPaquetes as manepack
 
-class interface:
+class interfazDistribuida:
 
 	def __init__(self):
 
 		# Hash que mantiene los metadatos de los nodos
-		# identificador: [ip, puerto, lista con paginas en ese nodo, espacio disponible en el nodo]
-		# 1: [-1, -1, [], -1]
+		# nodo: [ip, espacio disponible]
+		# ejemplo 1: [21581, 100]
 		self.node_manager = {
 
 		}
@@ -20,41 +23,22 @@ class interface:
 
 		}
 
-		# la ip va a estar quemada, se quema el día de la demo
+		# La ip va a estar quemada, se quema el día de la demo
 		self.active = False
+		self.status = False
 		self.my_ip = "127.0.0.1"
 		self.my_broadcast_port = 6666
 		self.my_tcp_port = 3114
+		self.mac_addres_in_bytes = uuid.getnode().to_bytes(6, 'little')
+		self.raw_mac_address = uuid.getnode()
+		self.round = 0
 		self.nodeCounter = 0
-
-	# ------------------
-	# Método que construye el paquete que le va a mandar al nodo de memoria cuando quiera guardar
-	# ------------------
-
-	def node_package_sender(self, page_id, page_size, data_to_be_saved):
-
-		op_code = 0x00
-		package = [op_code, page_id, page_size, data_to_be_saved]
-		return package
-
-	# ------------------
-	# Método que construye el paquete que le va a mandar al nodo de memoria cuando quiere recuperar página
-	# ------------------
-
-	def node_package_receiver(self, page_id):
-
-		op_code = 0x01
-		package = [op_code, page_id]
-		return package
 
 	# ------------------
 	# Método que busca por best-fit cuál nodo es el más adecuado y guarda página
 	# ------------------
 
-	def save_data(self, page_id, page_size, data_to_be_saved):
-		
-		package = self.node_package_sender(page_id, page_size, data_to_be_saved)
-		raw_package = bytes(package)
+	def save_data(self, package):
 
 		minimum_available = 100000000
 		which_node = 0
@@ -63,122 +47,220 @@ class interface:
 			
 			node_data = self.node_manager[key]
 			
-			if minimum_available > node_data[2] and node_data[2] > len(data_to_be_saved):
+			if minimum_available > node_data[1] and node_data[1] > len(package[2]):
 				
-				minimum_available = node_data[2]
+				minimum_available = node_data[1]
 				which_node = key
 
 		node = self.node_manager[which_node]
 
 		host = node[0]
-		port = node[1]
 
 		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
 
-			sock_node.connect((host, port))
+			sock_node.connect((host, 3114))
 
 			while True:
 
-				sock_node.sendall(raw_package)
+				sock_node.sendall(package)
 				reply = sock_node.recv(1024)
-		
-				if reply[0] == 1:
+				node_size = manepack.desempacar_paquete_guardar_respuesta_ID_NM(reply, package[1])
 
-					self.page_manager[page_id] = which_node
+				if node_size >= 0:
 
-					node[2].append(page_id)
-					node[3] = reply[1]
+					self.page_manager[package[1]] = which_node
+					node[1] = node_size
 					break
 
 			sock_node.close()
 
 	# ------------------
+	# Método que devuelve la respuesta al ML, cuuando el ML pide guardar
+	# ------------------
+
+	def save_data_answer(self, page_id):
+
+		op_code = 2
+		paquete = manepack.paquete_respuesta_guardar_ML_ID(op_code, page_id)
+		return paquete
+
+	# ------------------
 	# Método que busca cual nodo tiene la página deseada y se la pide
 	# ------------------
 
-	def recover_data(self, page_id, page_size):
+	def recover_data(self, package):
 
 		for page in self.page_manager:
 
-			if page == page_id:
+			if page == package[1]:
 
-				node = self.page_manager[page]
-				host = node[0]
-				port = node[1]
-
-				package = self.node_package_receiver(page_id)
-				raw_package = bytes(package)
+				node_number = self.page_manager[page]
+				node_data = self.node_manager[node_number]
+				host = node_data[0]
 
 				with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
 
-					sock_node.connect((host, port))
+					sock_node.connect((host, 3114))
 
 					while True:
 
-						sock_node.sendall(raw_package)
-						reply = sock_node.recv((page_size+1))
+						sock_node.sendall(package)
+						reply_package = sock_node.recv(8184)
 		
-						if reply[0] == 1:
+						if reply_package[0] == 2:
 
 							sock_node.close()
-							return reply[1]
+							return reply_package
 
 		print ("Page does not exist in any node.")
 
-	'''
-
-	# ------------------
-	# Método que establece la interfaz activa
-	# ------------------
-
-	def set_active_interface(self):
-
-		lowestIp = self.myIp
-		host = ''
-		port = self.myPort
-
-		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sockServer:
-    		
-			sockServer.bind((host, port))
-    		sockServer.listen(1)
-    		conn, addr = sockServer.accept()
-    		
-			with conn:
-        
-				print("Interfaz con ip: " + addr + " se ha reportado.")
-				while True:
-            
-					data = conn.recv(1024)
-					if not data: break
-        
-						conn.sendall(data)
-
-		for ip in ipList:
-
-			if lowestIp < ipList[ip]:
-
-				lowestIp = ipList[ip]
-
-		if lowestIp == self.myIp:
-
-			self.active = True
-			# hago broadcast que soy activo
-
-		return 0
-
-	def broadcast_to_all_interface(self):
-
-		host = ''
-		port = 10000
-
-		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as broadcastSock:
+class threadsDistributedInterface(threading.Thread):
     
-			broadcastSock.connect((HOST, PORT))
-    		broadcastSock.sendall(b'Cliente 1')
-    		data = broadcastSock.recv(1024)
+	def __init__(self, name, interface):
 
-		print('Received', repr(data))
+		threading.Thread.__init__(self)
+		self.name = name
+		self.kill = False
+		self.disInter = interface
 
-	'''
+	def run(self):
 
-print ("Todo compila")
+		my_name = self.name
+
+		if(my_name == "sender"):
+
+			interBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+			interBroad.bind(("", 44444))
+
+			paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
+
+			while not self.kill:
+				interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+				print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
+				time.sleep(4)
+
+		elif(my_name == "receiver"):
+			
+			interClient = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			interClient.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			interClient.bind(("", self.disInter.my_broadcast_port))
+
+			# este while hay que cambiarlo a mientras la ronda sea >= 0
+			while not self.kill:
+
+				paquete, addr = interClient.recvfrom(1024)
+				print ("Ip de la interfaz: " + str(addr[0]))
+
+				datos = manepack.desempacar_paquete_quieroSer(paquete)
+
+				if datos[1] == self.disInter.round:
+
+					if datos[0] < self.disInter.raw_mac_address:
+
+						self.disInter.round += 1
+
+					else:
+
+						self.disInter.round = -1
+
+				elif datos[1] > self.disInter.round:
+
+					self.disInter.round = -1
+
+		elif(my_name == "nodeListener"):
+
+			nodeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			nodeBroad.bind(("", 5000))
+
+			while not self.kill:
+
+				paquete, addr = nodeBroad.recvfrom(1024)
+				print ("Ip del nodo de memoria: " + str(addr[0]))
+
+				espacio_nodo = manepack.desempacar_paquete_estoyAqui(paquete)
+				self.disInter.node_manager[self.disInter.nodeCounter] = [addr, espacio_nodo]
+				self.disInter.nodeCounter += 1
+
+		elif(my_name == "localMemoryListener"):
+
+			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
+
+				memoryListener.bind((self.disInter.my_ip, 2000))
+				memoryListener.listen()
+
+				conn, addr = memoryListener.accept()
+				
+				with conn:
+
+					while not self.kill:
+						
+						paquete = conn.recv(1024)
+
+						if(paquete[0] == 0):
+
+							self.disInter.save_data(paquete)
+							answer_package = self.disInter.save_data_answer(paquete[1])
+							conn.sendall(answer_package)
+
+						elif(paquete[0] == 1):
+
+							answer_package = self.disInter.recover_data(paquete)
+							conn.sendall(answer_package)
+
+# ------------------
+# Método básico que revisa si los threads están vivos
+# ------------------
+
+def threads_alive(threads):
+
+    if threads[0].is_alive() and threads[1].is_alive():
+
+        return True
+
+    else:
+
+        return False
+
+# ------------------
+# Main de la interfaz
+# ------------------
+
+def main():
+
+	threads = []
+	distributedInterface = interfazDistribuida()
+
+	threadSenderBC = threadsDistributedInterface(name = "sender", interface = distributedInterface)
+	threadReceiverBC = threadsDistributedInterface(name = "receiver", interface = distributedInterface)
+	threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
+	threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
+
+	threadSenderBC.start()
+	threadReceiverBC.start()
+	threadMemoryNodeListener.start()
+	threadLocalMemoryListener.start()
+
+	threads.append(threadSenderBC)
+	threads.append(threadReceiverBC)
+	threads.append(threadMemoryNodeListener)
+	threads.append(threadLocalMemoryListener)
+
+	while threads_alive(threads):
+
+		try:
+
+			[thread.join(1) for thread in threads
+				if thread is not None and thread.is_alive()]
+
+		except KeyboardInterrupt:
+
+			print ("Killing threads")
+			threadSenderBC.kill = True
+			threadReceiverBC.kill = True
+
+	print ("Everything compiles")
+
+main()
