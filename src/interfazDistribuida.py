@@ -20,9 +20,11 @@ class interface:
 
 		}
 
+		# la ip va a estar quemada, se quema el día de la demo
 		self.active = False
-		self.myIp = "127.0.0.1"
-		self.myPort = 5015
+		self.my_ip = "127.0.0.1"
+		self.my_broadcast_port = 6666
+		self.my_tcp_port = 3114
 		self.nodeCounter = 0
 
 	# ------------------
