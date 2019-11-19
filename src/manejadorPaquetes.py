@@ -1,3 +1,4 @@
+# coding=utf-8
 import struct
 
 # ------------------------
@@ -248,11 +249,11 @@ def desempacar_paquete_soyActivo(paquete):
         filas_tabla1 = paquete[1]
         filas_tabla2 = paquete[2]
 
-        tamaño_datos1 = filas_tabla1 * 2
-        datos_tabla1 = paquete[3:(3+tamaño_datos1)]
+        tamano_datos1 = filas_tabla1 * 2
+        datos_tabla1 = paquete[3:(3+tamano_datos1)]
 
-        tamaño_datos2 = filas_tabla2 * 9
-        datos_tabla2 = paquete[(3+tamaño_datos1):(3+tamaño_datos1+tamaño_datos2)]
+        tamano_datos2 = filas_tabla2 * 9
+        datos_tabla2 = paquete[(3+tamano_datos1):(3+tamano_datos1+tamano_datos2)]
 
         return [filas_tabla1, filas_tabla2, datos_tabla1, datos_tabla2]
 
