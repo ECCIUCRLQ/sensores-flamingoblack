@@ -220,14 +220,14 @@ def desempacar_paquete_quieroSer(paquete):
 
     if op_code == 4:
 
-        print ("Se produjo error al participar como interfaz activa")
+        print ("Se produjo error en una interfaz que quiere participar como interfaz activa")
         return 1
 
     else:
 
         mac = mac1 | (mac2 << 16)
-        print ("Interfaz se ha reportado con su MAC: " + str(mac))
-        print ("Interfaz se ha reportado con ronda: " + str(ronda))
+        print ("Una interfaz se ha reportado con su MAC: " + str(mac))
+        print ("Una interfaz se ha reportado con ronda: " + str(ronda))
         return [mac, ronda]
 
 # ------------------------

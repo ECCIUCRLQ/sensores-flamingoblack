@@ -155,19 +155,28 @@ class threadsDistributedInterface(threading.Thread):
 
 				datos = manepack.desempacar_paquete_quieroSer(paquete)
 
-				if datos[1] == self.disInter.round:
+				if datos[0] == self.disInter.raw_mac_address:
 
-					if datos[0] < self.disInter.raw_mac_address:
+					if datos[1] == self.disInter.round:
 
-						self.disInter.round += 1
+						if datos[0] < self.disInter.raw_mac_address:
 
-					else:
+							self.disInter.round += 1
+
+						else:
+
+							self.disInter.round = -1
+							print ("He perdido la champions, me delcaro interfaz activa")
+							break
+
+					elif datos[1] > self.disInter.round:
 
 						self.disInter.round = -1
+						print ("Estoy atrasado en la champions, así que me declaro activo")
+						break
 
-				elif datos[1] > self.disInter.round:
-
-					self.disInter.round = -1
+			self.disInter.status = True
+			interClient.close()
 
 		elif(my_name == "nodeListener"):
 
@@ -216,13 +225,13 @@ class threadsDistributedInterface(threading.Thread):
 
 def threads_alive(threads):
 
-    if threads[0].is_alive() and threads[1].is_alive():
+	for thread in threads:
 
-        return True
+		if not thread.is_alive():
 
-    else:
+			return False
 
-        return False
+	return True
 
 # ------------------
 # Main de la interfaz
@@ -240,13 +249,9 @@ def main():
 
 	threadSenderBC.start()
 	threadReceiverBC.start()
-	threadMemoryNodeListener.start()
-	threadLocalMemoryListener.start()
 
 	threads.append(threadSenderBC)
 	threads.append(threadReceiverBC)
-	threads.append(threadMemoryNodeListener)
-	threads.append(threadLocalMemoryListener)
 
 	while threads_alive(threads):
 
@@ -255,12 +260,22 @@ def main():
 			[thread.join(1) for thread in threads
 				if thread is not None and thread.is_alive()]
 
+			if distributedInterface.status == True and distributedInterface.active == True:
+
+				print ("Nos activaron")
+				threadMemoryNodeListener.start()
+				threadLocalMemoryListener.start()
+				threads.append(threadMemoryNodeListener)
+				threads.append(threadLocalMemoryListener)
+
 		except KeyboardInterrupt:
 
 			print ("Killing threads")
 			threadSenderBC.kill = True
 			threadReceiverBC.kill = True
+			threadLocalMemoryListener.kill = True
+			threadMemoryNodeListener.kill = True
 
-	print ("Everything compiles")
+	#print ("Everything compiles")
 
 main()
