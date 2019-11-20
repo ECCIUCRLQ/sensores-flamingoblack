@@ -33,6 +33,8 @@ class interfazDistribuida:
 		self.raw_mac_address = uuid.getnode()
 		self.round = 0
 		self.nodeCounter = 0
+		self.pageCounter = 0
+		self.sendChanges = False
 
 	# ------------------
 	# Método que busca por best-fit cuál nodo es el más adecuado y guarda página
@@ -69,6 +71,7 @@ class interfazDistribuida:
 				if node_size >= 0:
 
 					self.page_manager[package[1]] = which_node
+					self.pageCounter += 1
 					node[1] = node_size
 					break
 
@@ -114,6 +117,62 @@ class interfazDistribuida:
 
 		print ("Page does not exist in any node.")
 
+	def create_dump(self):
+
+		dump1 = bytearray()
+		dump2 = bytearray()
+
+		for page in self.page_manager:
+
+			dump1.append(page)
+			dump1.append(self.page_manager[page])
+
+		for node in self.node_manager:
+
+			dump2.append(node)
+			data = self.node_manager[node]
+			
+			ip_node = struct.pack("I", data[0])
+			size_node = struct.pack("I", data[1])
+
+			for i in range(4):
+
+				dump2.append(ip_node[i])
+			
+			for i in range(4):
+
+				dump2.append(size_node[i])
+
+		return dump1, dump2
+
+	def update_with_dump(self, data):
+
+		page_amount = data[0]
+		page_dump = data[2]
+
+		page_iterator = 0
+
+		while page_amount > 0:
+
+			self.page_manager[page_dump[page_iterator]] = page_dump[page_iterator+1]
+			page_iterator += 2
+			page_amount -= 1
+
+		node_amount = data[1]
+		node_dump = data[3]
+
+		node_iterator = 0
+
+		while node_amount > 0:
+
+			ip = struct.unpack("I", node_dump[node_iterator+1:(node_iterator+1)+4])
+			size = struct.unpack("I", node_dump[(node_iterator+1)+4:((node_iterator+1)+4)+4])
+
+			value = [ip, size]
+			self.node_manager[node_dump[node_iterator]] = value
+			node_iterator += 9
+			node_amount -= 1
+
 class threadsDistributedInterface(threading.Thread):
     
 	def __init__(self, name, interface):
@@ -127,27 +186,31 @@ class threadsDistributedInterface(threading.Thread):
 
 		my_name = self.name
 
-		if(my_name == "sender"):
+		if(my_name == "QuieroSerSender"):
 
 			interBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 			interBroad.bind(("", 44444))
 
-			paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
-
 			while not self.kill:
+
+				if self.disInter.status == True:
+
+					break
+
+				paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
 				interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
 				print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
+
 				time.sleep(4)
 
-		elif(my_name == "receiver"):
+		elif(my_name == "QuieroSerReceiver"):
 			
 			interClient = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			interClient.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 			interClient.bind(("", self.disInter.my_broadcast_port))
 
-			# este while hay que cambiarlo a mientras la ronda sea >= 0
 			while not self.kill:
 
 				paquete, addr = interClient.recvfrom(1024)
@@ -155,7 +218,8 @@ class threadsDistributedInterface(threading.Thread):
 
 				datos = manepack.desempacar_paquete_quieroSer(paquete)
 
-				if datos[0] == self.disInter.raw_mac_address:
+				# esta condicion debe ser diferente de, está igual a para prueba
+				if datos[0] != self.disInter.raw_mac_address:
 
 					if datos[1] == self.disInter.round:
 
@@ -178,6 +242,53 @@ class threadsDistributedInterface(threading.Thread):
 			self.disInter.status = True
 			interClient.close()
 
+		elif(my_name == "soyActivo"):
+
+			activeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			activeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+			activeBroad.bind(("", 44444))
+
+			dump1, dump2 = self.disInter.create_dump()
+			paquete = manepack.paquete_broadcast_soyActivo_ID_ID(1, self.disInter.pageCounter, self.disInter.nodeCounter, dump1, dump2)
+			activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+
+			while not self.kill:
+
+				if self.disInter.sendChanges:
+
+					self.disInter.sendChanges = False
+					dump1, dump2 = self.disInter.create_dump()
+					paquete = manepack.paquete_broadcast_keepAlive_ID_ID(2, self.disInter.pageCounter, self.disInter.nodeCounter, dump1, dump2)
+					activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+					print ("Paquete keep alive con cambios enviado")
+
+				else:
+
+					paquete = manepack.paquete_broadcast_keepAlive_ID_ID(2, 0, 0, 0, 0)
+					activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+					print ("Paquete keep alive sin cambios enviado")
+				
+				time.sleep(4)
+
+		elif(my_name == "soyPasivo"):
+
+			pasiveBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			pasiveBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			pasiveBroad.bind(("", self.disInter.my_broadcast_port))
+
+			while not self.kill:
+
+				paquete, addr = pasiveBroad.recvfrom(65536)
+
+				if paquete[0] == 1 or paquete[0] == 2:
+				
+					datos = manepack.desempacar_paquete_keepAlive(paquete)
+
+					if datos > 1:
+
+						self.disInter.update_with_dump(datos)
+
 		elif(my_name == "nodeListener"):
 
 			nodeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -192,6 +303,7 @@ class threadsDistributedInterface(threading.Thread):
 				espacio_nodo = manepack.desempacar_paquete_estoyAqui(paquete)
 				self.disInter.node_manager[self.disInter.nodeCounter] = [addr, espacio_nodo]
 				self.disInter.nodeCounter += 1
+				self.disInter.sendChanges = True
 
 		elif(my_name == "localMemoryListener"):
 
@@ -211,6 +323,7 @@ class threadsDistributedInterface(threading.Thread):
 						if(paquete[0] == 0):
 
 							self.disInter.save_data(paquete)
+							self.disInter.sendChanges = True
 							answer_package = self.disInter.save_data_answer(paquete[1])
 							conn.sendall(answer_package)
 
@@ -242,10 +355,12 @@ def main():
 	threads = []
 	distributedInterface = interfazDistribuida()
 
-	threadSenderBC = threadsDistributedInterface(name = "sender", interface = distributedInterface)
-	threadReceiverBC = threadsDistributedInterface(name = "receiver", interface = distributedInterface)
+	threadSenderBC = threadsDistributedInterface(name = "QuieroSerSender", interface = distributedInterface)
+	threadReceiverBC = threadsDistributedInterface(name = "QuieroSerReceiver", interface = distributedInterface)
 	threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
 	threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
+	threadSoyActivo = threadsDistributedInterface(name = "soyActivo", interface = distributedInterface)
+	threadSoyPasivo = threadsDistributedInterface(name = "soyPasivo", interface = distributedInterface)
 
 	threadSenderBC.start()
 	threadReceiverBC.start()
@@ -262,11 +377,22 @@ def main():
 
 			if distributedInterface.status == True and distributedInterface.active == True:
 
-				print ("Nos activaron")
+				print ("Thread activo activado")
+				
 				threadMemoryNodeListener.start()
 				threadLocalMemoryListener.start()
+				threadSoyActivo.start()
+
 				threads.append(threadMemoryNodeListener)
 				threads.append(threadLocalMemoryListener)
+				threads.append(threadSoyActivo)
+
+			elif distributedInterface.status == True and distributedInterface.active == False:
+
+				print ("Thread pasivo activado")
+
+				threadSoyPasivo.start()
+				threads.append(threadSoyPasivo)
 
 		except KeyboardInterrupt:
 
