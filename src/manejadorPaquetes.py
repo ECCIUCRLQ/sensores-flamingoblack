@@ -67,10 +67,10 @@ def paquete_respuesta_leer(op_code, id_page, data):
 # Estructura [op_code (1 byte), mac (6 bytes), round (1 byte)]
 # ------------------------
 
-def paquete_broadcast_quieroSer_ID_ID(op_code, mac_address, round):
+def paquete_broadcast_quieroSer_ID_ID(op_code, mac_address, round_num):
  
     package_format = "=B6sB"
-    package = struct.pack(package_format, op_code, mac_address, round)
+    package = struct.pack(package_format, op_code, mac_address, round_num)
 
     return package
 
@@ -220,7 +220,7 @@ def desempacar_paquete_quieroSer(paquete):
 
     if op_code == 4:
 
-        print ("Se produjo error en una interfaz que quiere participar como interfaz activa")
+        print ("Se produjo error en una interfaz que quiere ser interfaz activa")
         return 1
 
     else:
