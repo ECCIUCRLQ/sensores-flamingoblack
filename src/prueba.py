@@ -5,6 +5,29 @@ import time
 import sys
 import uuid
 
+page_manager = {
+    1:5,
+    2:4,
+    3:8
+}
+
+node_manager = {
+    5:[1459, 500],
+    1:[25800, 4500]
+}
+
+page_manager2 = {
+
+}
+
+node_manager2 = {
+    1:[25800, 5000],
+    5:[1459, 500]
+}
+
+nodeCounter = 2
+pageCounter = 0
+
 def cliente():
 
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,6 +62,65 @@ def servidor():
         server.sendto(paquete, ('<broadcast>', 37020))
         print ("Mensaje enviado!")
         time.sleep(1)
+
+def create_dump():
+
+    dump1 = bytearray()
+    dump2 = bytearray()
+
+    for page in page_manager:
+
+        dump1.append(page)
+        dump1.append(page_manager[page])
+
+    for node in node_manager:
+
+        dump2.append(node)
+        data = node_manager[node]
+        
+        ip_node = struct.pack("I", data[0])
+        size_node = struct.pack("I", data[1])
+    
+        for i in range(4):
+
+            dump2.append(ip_node[i])
+
+        for i in range(4):
+
+            dump2.append(size_node[i])
+
+    return dump1, dump2
+
+def read_dump(data):
+
+    global page_manager2
+    global node_manager2
+
+    page_amount = data[0]
+    page_dump = data[2]
+
+    page_iterator = 0
+
+    while page_amount > 0:
+
+        page_manager2[page_dump[page_iterator]] = page_dump[page_iterator+1]
+        page_iterator += 2
+        page_amount -= 1
+
+        node_amount = data[1]
+        node_dump = data[3]
+
+    node_iterator = 0
+
+    while node_amount > 0:
+
+        ip = struct.unpack("I", node_dump[node_iterator+1:(node_iterator+1)+4])
+        size = struct.unpack("I", node_dump[(node_iterator+1)+4:((node_iterator+1)+4)+4])
+
+        value = [ip[0], size[0]]
+        node_manager2[node_dump[node_iterator]] = value
+        node_iterator += 9
+        node_amount -= 1
 
 if len(sys.argv) > 1:
 
@@ -113,3 +195,15 @@ else:
 
     paqueteLee = manepack.paquete_para_leer(op_code, id_page)
     print (paqueteLee)
+
+    dump1, dump2 = create_dump()
+    paqueteSoyActivo = manepack.paquete_broadcast_soyActivo_ID_ID(2, 3, 2, dump1, dump2)
+
+    datos6 = manepack.desempacar_paquete_keepAlive(paqueteSoyActivo)
+    print (datos6)
+
+    read_dump(datos6)
+    print (page_manager)
+    print (page_manager2)
+    print (node_manager)
+    print (node_manager2)
