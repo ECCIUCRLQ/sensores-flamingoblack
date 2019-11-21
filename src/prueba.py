@@ -196,6 +196,8 @@ else:
     paqueteLee = manepack.paquete_para_leer(op_code, id_page)
     print (paqueteLee)
 
+    # prueba dumps
+
     dump1, dump2 = create_dump()
     paqueteSoyActivo = manepack.paquete_broadcast_soyActivo_ID_ID(2, 3, 2, dump1, dump2)
 
@@ -207,3 +209,11 @@ else:
     print (page_manager2)
     print (node_manager)
     print (node_manager2)
+
+    # prubea empaquetar y desempaquetar ip
+
+    ip = socket.inet_aton('192.168.1.1')
+    print (ip)
+
+    ip_un = socket.inet_ntoa(ip)
+    print (ip_un)
