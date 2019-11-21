@@ -37,6 +37,7 @@ class interfazDistribuida:
 		self.nodeCounter = 0
 		self.pageCounter = 0
 		self.sendChanges = False
+		self.pasive = False
 
 	# ------------------
 	# Método que busca por best-fit cuál nodo es el más adecuado y guarda página
@@ -113,7 +114,7 @@ class interfazDistribuida:
 					while True:
 
 						sock_node.sendall(package)
-						reply_package = sock_node.recv(8184)
+						reply_package = sock_node.recv(691204)	# tamaño de la página más grande, más op code (1 byte) y id page (1 byte), más dos por si algo
 		
 						if reply_package[0] == 2:
 
@@ -204,9 +205,11 @@ class threadsDistributedInterface(threading.Thread):
 
 					break
 
-				paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
-				interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
-				print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
+				else:
+
+					paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
+					interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+					print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
 
 				time.sleep(4)
 
@@ -221,7 +224,7 @@ class threadsDistributedInterface(threading.Thread):
 			while not self.kill:
 
 				paquete, addr = interClient.recvfrom(1024)
-				print ("Ip de la interfaz: " + str(addr[0]))
+				#print ("Ip de la interfaz: " + str(addr[0]))
 
 				datos = manepack.desempacar_paquete_quieroSer(paquete)
 
@@ -236,13 +239,13 @@ class threadsDistributedInterface(threading.Thread):
 
 						else:
 
-							self.disInter.round = -1
+							self.disInter.round = 10
 							print ("He perdido la champions, me delcaro interfaz activa")
 							break
 
 					elif datos[1] > self.disInter.round:
 
-						self.disInter.round = -1
+						self.disInter.round = 10
 						print ("Estoy atrasado en la champions, así que me declaro activo")
 						break
 
@@ -309,6 +312,7 @@ class threadsDistributedInterface(threading.Thread):
 					self.disInter.startChampions = True
 					break
 
+			self.disInter.pasive = False
 			pasiveBroad.close()
 
 		elif(my_name == "nodeListener"):
@@ -377,41 +381,47 @@ def threads_alive(threads):
 
 def main():
 
-	threads = []
+	#threads = []
 	distributedInterface = interfazDistribuida()
 
 	#threadSenderBC = threadsDistributedInterface(name = "QuieroSerSender", interface = distributedInterface)
 	#threadReceiverBC = threadsDistributedInterface(name = "QuieroSerReceiver", interface = distributedInterface)
-	threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
-	threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
-	threadSoyActivo = threadsDistributedInterface(name = "soyActivo", interface = distributedInterface)
-	threadSoyPasivo = threadsDistributedInterface(name = "soyPasivo", interface = distributedInterface)
+	#threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
+	#threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
+	#threadSoyActivo = threadsDistributedInterface(name = "soyActivo", interface = distributedInterface)
+	#threadSoyPasivo = threadsDistributedInterface(name = "soyPasivo", interface = distributedInterface)
 
 	while 1:
 
 		try:
 
-			[thread.join(1) for thread in threads
-				if thread is not None and thread.is_alive()]
+			#[thread.join(1) for thread in threads
+			#	if thread is not None and thread.is_alive()]
 
 			if distributedInterface.status == True and distributedInterface.active == True:
 
 				print ("Thread activo activado")
 				
+				threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
+				threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
+				threadSoyActivo = threadsDistributedInterface(name = "soyActivo", interface = distributedInterface)
+
 				threadMemoryNodeListener.start()
 				threadLocalMemoryListener.start()
 				threadSoyActivo.start()
 
-				threads.append(threadMemoryNodeListener)
-				threads.append(threadLocalMemoryListener)
-				threads.append(threadSoyActivo)
+				#threads.append(threadMemoryNodeListener)
+				#threads.append(threadLocalMemoryListener)
+				#threads.append(threadSoyActivo)
 
-			elif distributedInterface.status == True and distributedInterface.active == False and not threadSoyPasivo.is_alive():
+			elif distributedInterface.status == True and distributedInterface.active == False and not distributedInterface.pasive:
 
 				print ("Thread pasivo activado")
+				distributedInterface.pasive = True
 
+				threadSoyPasivo = threadsDistributedInterface(name = "soyPasivo", interface = distributedInterface)
 				threadSoyPasivo.start()
-				threads.append(threadSoyPasivo)
+				#threads.append(threadSoyPasivo)
 
 			elif distributedInterface.status == False and distributedInterface.startChampions == True:
 
@@ -424,8 +434,8 @@ def main():
 				threadSenderBC.start()
 				threadReceiverBC.start()
 
-				threads.append(threadSenderBC)
-				threads.append(threadReceiverBC)
+				#threads.append(threadSenderBC)
+				#threads.append(threadReceiverBC)
 
 				distributedInterface.startChampions = False
 
