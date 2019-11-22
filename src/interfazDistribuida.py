@@ -38,6 +38,8 @@ class interfazDistribuida:
 		self.pageCounter = 0
 		self.sendChanges = False
 		self.pasive = False
+		self.startActive = False
+		self.timeout_event = threading.Event()
 
 	# ------------------
 	# Método que busca por best-fit cuál nodo es el más adecuado y guarda página
@@ -197,7 +199,7 @@ class threadsDistributedInterface(threading.Thread):
 			interBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-			interBroad.bind(("", 44444))
+			interBroad.bind(("", self.disInter.my_broadcast_port))
 
 			while not self.kill:
 
@@ -211,47 +213,66 @@ class threadsDistributedInterface(threading.Thread):
 					interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
 					print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
 
-				time.sleep(4)
+					paquete, addr = interBroad.recvfrom(1024)
+					datos = manepack.desempacar_paquete_quieroSer(paquete)
 
-			interBroad.close()
+					# esta condicion debe ser diferente de, está igual a para prueba
+					if datos[0] != self.disInter.raw_mac_address:
 
-		elif(my_name == "QuieroSerReceiver"):
-			
-			interClient = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			interClient.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-			interClient.bind(("", self.disInter.my_broadcast_port))
+						if datos[1] == self.disInter.round:
 
-			while not self.kill:
+							if datos[0] < self.disInter.raw_mac_address:
 
-				paquete, addr = interClient.recvfrom(1024)
-				#print ("Ip de la interfaz: " + str(addr[0]))
+								self.disInter.round += 1
 
-				datos = manepack.desempacar_paquete_quieroSer(paquete)
+							else:
 
-				# esta condicion debe ser diferente de, está igual a para prueba
-				if datos[0] == self.disInter.raw_mac_address:
+								self.disInter.round = 3
+								print ("He perdido la champions, me delcaro interfaz pasiva")
+								break
 
-					if datos[1] == self.disInter.round:
+						elif datos[1] > self.disInter.round:
 
-						if datos[0] < self.disInter.raw_mac_address:
+							self.disInter.round = 3
+							print ("Estoy atrasado en la champions, así que me declaro activo")
+							break
 
-							self.disInter.round += 1
+					if self.disInter.timeout_event.is_set():
+
+						dump1, dump2 = self.disInter.create_dump()
+						paquete = manepack.paquete_broadcast_soyActivo_ID_ID(1, self.disInter.pageCounter, self.disInter.nodeCounter, dump1, dump2)
+						interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+
+						paquete, addr = interBroad.recvfrom(1024)
+						if paquete[0] == 1:
+
+							if datos[0] != self.disInter.raw_mac_address:
+
+								if datos[0] < self.disInter.raw_mac_address:
+
+									self.disInter.active = True
+									break
+
+								else:
+
+									self.disInter.round = 3
+									break
 
 						else:
 
-							self.disInter.round = 10
-							print ("He perdido la champions, me delcaro interfaz activa")
+							self.disInter.active = True
 							break
 
-					elif datos[1] > self.disInter.round:
-
-						self.disInter.round = 10
-						print ("Estoy atrasado en la champions, así que me declaro activo")
-						break
+				time.sleep(4)
 
 			self.disInter.status = True
 			self.disInter.startChampions = False
-			interClient.close()
+			interBroad.close()
+
+		elif(my_name == "timeout"):
+
+			time.sleep(10)
+			self.disInter.timeout_event.set()
 
 		elif(my_name == "soyActivo"):
 
@@ -281,6 +302,8 @@ class threadsDistributedInterface(threading.Thread):
 					print ("Paquete keep alive sin cambios enviado")
 				
 				time.sleep(4)
+
+			activeBroad.close()
 
 		elif(my_name == "soyPasivo"):
 
@@ -381,7 +404,7 @@ def threads_alive(threads):
 
 def main():
 
-	#threads = []
+	threads = []
 	distributedInterface = interfazDistribuida()
 
 	#threadSenderBC = threadsDistributedInterface(name = "QuieroSerSender", interface = distributedInterface)
@@ -395,13 +418,14 @@ def main():
 
 		try:
 
-			#[thread.join(1) for thread in threads
-			#	if thread is not None and thread.is_alive()]
+			[thread.join(1) for thread in threads
+				if thread is not None and thread.is_alive()]
 
-			if distributedInterface.status == True and distributedInterface.active == True:
+			if distributedInterface.status == True and distributedInterface.active == True and not distributedInterface.startActive:
 
 				print ("Thread activo activado")
-				
+				distributedInterface.startActive = True
+
 				threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
 				threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
 				threadSoyActivo = threadsDistributedInterface(name = "soyActivo", interface = distributedInterface)
@@ -410,9 +434,9 @@ def main():
 				threadLocalMemoryListener.start()
 				threadSoyActivo.start()
 
-				#threads.append(threadMemoryNodeListener)
-				#threads.append(threadLocalMemoryListener)
-				#threads.append(threadSoyActivo)
+				threads.append(threadMemoryNodeListener)
+				threads.append(threadLocalMemoryListener)
+				threads.append(threadSoyActivo)
 
 			elif distributedInterface.status == True and distributedInterface.active == False and not distributedInterface.pasive:
 
@@ -421,7 +445,7 @@ def main():
 
 				threadSoyPasivo = threadsDistributedInterface(name = "soyPasivo", interface = distributedInterface)
 				threadSoyPasivo.start()
-				#threads.append(threadSoyPasivo)
+				threads.append(threadSoyPasivo)
 
 			elif distributedInterface.status == False and distributedInterface.startChampions == True:
 
@@ -429,12 +453,15 @@ def main():
 				time.sleep(5)
 
 				threadSenderBC = threadsDistributedInterface(name = "QuieroSerSender", interface = distributedInterface)
-				threadReceiverBC = threadsDistributedInterface(name = "QuieroSerReceiver", interface = distributedInterface)
+				threadTimeout = threadsDistributedInterface(name = "timeout", interface = distributedInterface)
+				#threadReceiverBC = threadsDistributedInterface(name = "QuieroSerReceiver", interface = distributedInterface)
 
 				threadSenderBC.start()
-				threadReceiverBC.start()
+				threadTimeout.start()
+				#threadReceiverBC.start()
 
-				#threads.append(threadSenderBC)
+				threads.append(threadSenderBC)
+				threads.append(threadTimeout)
 				#threads.append(threadReceiverBC)
 
 				distributedInterface.startChampions = False
@@ -442,12 +469,12 @@ def main():
 		except KeyboardInterrupt:
 
 			print ("Killing threads")
-			threadSenderBC.kill = True
-			threadReceiverBC.kill = True
-			threadLocalMemoryListener.kill = True
-			threadMemoryNodeListener.kill = True
-			threadSoyActivo.kill = True
-			threadSoyPasivo.kill = True
+
+			for thread in threads:
+
+				thread.kill = True
+
+			break
 
 	print ("Main thread exited")
 
