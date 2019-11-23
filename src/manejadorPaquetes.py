@@ -99,7 +99,7 @@ def paquete_broadcast_soyActivo_ID_ID(op_code, row1, row2, dump1, dump2):
 
 def paquete_broadcast_keepAlive_ID_ID(op_code, row1, row2, dump1, dump2):
 
-    if row1 and row2 > 0:
+    if row1 or row2 > 0:
 
         dump1_size = row1 * 2
         dump2_size = row2 * 9
