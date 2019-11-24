@@ -258,19 +258,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			while not self.kill:
 
-				if self.disInter.status == True:
-
-					break
-
-				else:
-
-					paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
-					interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
-					print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
-
-					paquete, addr = interBroad.recvfrom(1024)
-
-					if self.disInter.timeout_event.is_set():
+				if self.disInter.timeout_event.is_set():
 
 						# Me apropio de la IP global para la interfaz
 
@@ -281,11 +269,19 @@ class threadsDistributedInterface(threading.Thread):
 						self.disInter.active = True
 						break
 
+				else:
+
+					paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
+					interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+					print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
+
+					paquete, addr = interBroad.recvfrom(1024)
+
 					if paquete[0] == 0:
 
 						datos = manepack.desempacar_paquete_quieroSer(paquete)
 
-						# esta condicion debe ser diferente de, está igual a para prueba
+						# esta condicion debe ser diferente de, si está ogual a, entonces es para prueba
 						if datos[0] != self.disInter.raw_mac_address:
 
 							if datos[1] == self.disInter.round:
@@ -324,11 +320,11 @@ class threadsDistributedInterface(threading.Thread):
 			interBroad.close()
 
 		# Thread para el timeout de la champions, el timeout debe ser 3 segundos, si hay otro es para prueba
-		# Cuando el timeoutnse vence envía un evento, el cual es explicado en el thread de quiero ser
+		# Cuando el timeout se vence envía un evento, el cual es explicado en el thread de quiero ser
 
 		elif(my_name == "timeout"):
 
-			time.sleep(10)
+			time.sleep(3)
 			self.disInter.timeout_event.set()
 
 		# Thread activo, este thread inicialmente cuando se activa manda el mensaje soy activo y hace un dump de sus tablas
@@ -372,44 +368,36 @@ class threadsDistributedInterface(threading.Thread):
 
 			activeBroad.close()
 
-		# Thread que maneja la interfaz pasiva, siempre va estar escuchando broadcast por parte del activo
-		# Si el paquete keep alive trae datos, actualiza las tablas de la interfaz
-		# Si se vence el timeout de dos segundos, entonces indica que la activa no responde y va iniciar otra champions
+		# Thread que escucha broadcast en el peurto de las interfaces (6666)
+		# Este thread se activa junto al activo, con el fin de responderle a las interfaces que lleguen después reportándose con un quiero ser
+		# Este thread tiene el objetivo de mandarle el dump, muere junto con el acitvo
 
-		elif(my_name == "soyPasivo"):
+		elif(my_name == "activoListener"):
 
-			pasiveBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			pasiveBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-			pasiveBroad.bind(("", self.disInter.my_broadcast_port))
-			pasiveBroad.settimeout(2) # todavía no sé bien el timeout
+			print ("Thread activo listener iniciado")
 
-			timeout = select.select([pasiveBroad], [], [], 2)
+			activeBroadListen = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+			activeBroadListen.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+			activeBroadListen.bind(("", 15852))
 
 			while not self.kill:
 
-				if self.disInter.timeout_event.is_set():
+				paquete, addr = activeBroadListen.recvfrom(1024)
 
-					if timeout[0]:
+				if paquete[0] == 0:
 
-						paquete, addr = pasiveBroad.recvfrom(65536)
+					datos = manepack.desempacar_paquete_quieroSer(paquete)
 
-						if paquete[0] == 1 or paquete[0] == 2:
-						
-							datos = manepack.desempacar_paquete_keepAlive(paquete)
+					if datos[0] != self.disInter.mac_addres_in_bytes:
 
-							if datos > 1:
+						print ("Se envía dump a " + str(addr) + " que acaba de levantarse mientras yo soy activo")
 
-								self.disInter.update_with_dump(datos)
+						dump1, dump2 = self.disInter.create_dump(0)
+						paquete = manepack.paquete_broadcast_soyActivo_ID_ID(1, self.disInter.pageCounter, self.disInter.nodeCounter, dump1, dump2)
+						activeBroadListen.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
 
-					else:
-
-						print ("Interfaz activa no responde")
-						self.disInter.status = False
-						self.disInter.startChampions = True
-						break
-
-			self.disInter.pasive = False
-			pasiveBroad.close()
+			activeBroadListen.close()
 
 		# Thread que escucha los broadcast de los nodos de memoria, guarda el nodo con su respectivo espacio
 		# Además pone la variable send changes en True, con el fin de que el thread activo mande un keep alive con cambios
@@ -465,6 +453,43 @@ class threadsDistributedInterface(threading.Thread):
 							answer_package = self.disInter.recover_data(paquete)
 							conn.sendall(answer_package)
 
+		# Thread que maneja la interfaz pasiva, siempre va estar escuchando broadcast por parte del activo
+		# Si el paquete keep alive trae datos, actualiza las tablas de la interfaz
+		# Si se vence el timeout de dos segundos, entonces indica que la activa no responde y va iniciar otra champions
+
+		elif(my_name == "soyPasivo"):
+
+			pasiveBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			pasiveBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			pasiveBroad.bind(("", self.disInter.my_broadcast_port))
+			pasiveBroad.settimeout(3)
+
+			timeout = select.select([pasiveBroad], [], [], 3)
+
+			while not self.kill:
+
+				if timeout[0]:
+
+					paquete, addr = pasiveBroad.recvfrom(65536)
+
+					if paquete[0] == 1 or paquete[0] == 2:
+					
+						datos = manepack.desempacar_paquete_keepAlive(paquete)
+
+						if datos > 1:
+
+							self.disInter.update_with_dump(datos)
+
+				else:
+
+					print ("Interfaz activa no responde")
+					self.disInter.status = False
+					self.disInter.startChampions = True
+					break
+
+			self.disInter.pasive = False
+			pasiveBroad.close()
+
 # ------------------
 # Método básico que revisa si los threads están vivos
 # ------------------
@@ -506,14 +531,17 @@ def main():
 				threadMemoryNodeListener = threadsDistributedInterface(name = "nodeListener", interface = distributedInterface)
 				threadLocalMemoryListener = threadsDistributedInterface(name = "localMemoryListener", interface = distributedInterface)
 				threadSoyActivo = threadsDistributedInterface(name = "soyActivo", interface = distributedInterface)
+				threadSoyActivoListener = threadsDistributedInterface(name = "activoListener", interface = distributedInterface)
 
 				threadMemoryNodeListener.start()
 				threadLocalMemoryListener.start()
 				threadSoyActivo.start()
+				threadSoyActivoListener.start()
 
 				threads.append(threadMemoryNodeListener)
 				threads.append(threadLocalMemoryListener)
 				threads.append(threadSoyActivo)
+				threads.append(threadSoyActivoListener)
 
 			# Si ya se hizo la champions, active está en false y no hay una pasiva, entonces significa que mi interfaz quedó como activa
 
@@ -532,6 +560,7 @@ def main():
 			elif distributedInterface.status == False and distributedInterface.startChampions == True:
 
 				print ("Inicia champions")
+				distributedInterface.timeout_event.clear()
 
 				threadSenderBC = threadsDistributedInterface(name = "QuieroSerSender", interface = distributedInterface)
 				threadTimeout = threadsDistributedInterface(name = "timeout", interface = distributedInterface)
