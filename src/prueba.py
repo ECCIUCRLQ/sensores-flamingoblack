@@ -217,3 +217,16 @@ else:
 
     ip_un = socket.inet_ntoa(ip)
     print (ip_un)
+
+    # prueba paquete guardar
+
+    busDatos = bytearray(20)
+    id_pagina = 148
+    tamano_pagina = 20
+    
+    for i in range (20):
+
+        busDatos[i] = 15
+
+    paquete_pagina = manepack.paquete_para_guardar(0, id_pagina, tamano_pagina, busDatos)
+    print (paquete_pagina)
