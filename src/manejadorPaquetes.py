@@ -84,12 +84,11 @@ def paquete_broadcast_quieroSer_ID_ID(op_code, mac_address, round_num):
 
 def paquete_broadcast_soyActivo_ID_ID(op_code, row1, row2, dump1, dump2):
 
-    dump1_size = row1 * 2
-    dump2_size = row2 * 9
+    package_format = "=BBB"
+    package = struct.pack(package_format, op_code, row1, row2)
 
-    package_format = "=BBB" + str(dump1_size) + "s" + str(dump2_size) + "s"
-    package = struct.pack(package_format, op_code, row1, row2, dump1, dump2)
-
+    package += dump1
+    package += dump2
     return package
 
 # ------------------------
@@ -103,12 +102,11 @@ def paquete_broadcast_keepAlive_ID_ID(op_code, row1, row2, dump1, dump2):
 
     if row1 or row2 > 0:
 
-        dump1_size = row1 * 2
-        dump2_size = row2 * 9
+        package_format = "=BBB"
+        package = struct.pack(package_format, op_code, row1, row2)
 
-        package_format = "=BBB" + str(dump1_size) + "s" + str(dump2_size) + "s"
-        package = struct.pack(package_format, op_code, row1, row2, dump1, dump2)
-
+        package += dump1
+        package += dump2
         return package
 
     else:
