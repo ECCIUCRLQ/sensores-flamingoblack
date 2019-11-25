@@ -67,7 +67,7 @@ class interfazDistribuida:
 
 		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
 
-			sock_node.connect((host, 3114))
+			sock_node.connect(host, 3114)
 
 			while True:
 
@@ -422,7 +422,13 @@ class threadsDistributedInterface(threading.Thread):
 				self.disInter.nodeCounter += 1
 				self.disInter.sendChanges = True
 
-				nodeBroad.sendto(b'2', addr)
+				with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
+
+					sock_node.connect((addr[0], 3114))
+					answer = 2
+					answer = answer.to_bytes(1, 'big')
+					sock_node.sendall(answer)
+					sock_node.close()
 
 		# Thread que escucha a la memoria local, sus request de guardar y pedir página
 
