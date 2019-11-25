@@ -20,7 +20,7 @@ memory_admin = administradorMem.AdministradorMem()  # instancia del administrado
 # -----------------
 
 class threadsInterface(threading.Thread):
-    
+
     def __init__(self, name):
 
         threading.Thread.__init__(self)
@@ -42,7 +42,7 @@ class threadsInterface(threading.Thread):
 
                     sensor_id = bytearray([data[0], data[1], data[2], data[3]])
                     data_array = ([data[4], data[5]])
-                    
+
                     sensor_key = transform_into_key(sensor_id)
                     check_registered_sensor(sensor_id)
 
@@ -73,15 +73,15 @@ class threadsInterface(threading.Thread):
                     lock.acquire()
                     print ("No hay datos (" + my_name + ")\n")
                     lock.release()
-                
-                time.sleep(1)
+
+                time.sleep(0.1)
 
         else:
 
             while not self.kill:
 
                 plotter_sensor_id = check_plotter_request()
-            
+
                 if(plotter_sensor_id != 0):
 
                     lock.acquire()
@@ -98,7 +98,7 @@ class threadsInterface(threading.Thread):
                     lock.acquire()
                     print ("No hay pedidos del graficador\n")
                     lock.release()
-                
+
                 time.sleep(2)
 
 # -----------------
@@ -147,16 +147,16 @@ def check_if_data_exists(plot_id):
 
         offset_file = open("offsets.csv", "r+")
         line = offset_file.readline()
-    
+
         while line:
 
             if(line.find(sensor_id) != -1):
-                
+
                 line.strip("\n")
                 offset_csv = line.split(",")
-                
+
                 if len(offset_csv) == 2:
-                
+
                     offset_csv.pop(0)
                     offset = map(int, offset_csv)
                     data[2] = offset
@@ -168,7 +168,7 @@ def check_if_data_exists(plot_id):
                     offset_file.close()
                     print ("Data does not exist\n")
                     return 0
-                
+
             line = offset_file.readline()
 
     '''
@@ -195,7 +195,7 @@ def send_through_queue(data):
 
         total = len(data)
         size = 0
-        
+
         while size < len(data):
 
             if total > (15000*8):
@@ -244,15 +244,15 @@ def recover_data_from_memory(plot_id):
     data = sensor_manager[sensor_id]
     page_file = open("PageTableIndex.csv", "r+")
     line = page_file.readline()
-    
+
     while line:
 
         if(line.find(sensor_id) != -1):
-            
+
             line.strip("\n")
             pages_string = line.split(",")
             pages_string.pop(0)
-            
+
             num_pages = map(int, pages_string)
 
             if data[3] == 5:
@@ -267,7 +267,7 @@ def recover_data_from_memory(plot_id):
             return all_data
 
         line = page_file.readline()
-    
+
     page_file.close()
 
 # -----------------
@@ -308,13 +308,13 @@ def update_sensor_metadata(key, page):
             update_page_table(0, key)
         else:
             update_page_table(1, key)
-    
+
     else:
 
         if(data[3] == 5):
-            
+
             if(data[2] == 500):
-                
+
                 # data[1] = random.randint(0,50) dato para prueba
 
                 data[1] = memory_admin.reservarPagina(1)
@@ -349,24 +349,24 @@ def save_data(key, data_to_be_saved):
     data = sensor_manager[key]
 
     sensor_date_bytes = struct.pack("I", data_to_be_saved[0])
-    
+
     if data[3] == 5:
-    
+
         sensor_data_bytes = struct.pack("B", data_to_be_saved[1])
         data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], sensor_data_bytes[0]])
 
     else:
 
-        if data[4] == 0: 
-            
+        if data[4] == 0:
+
             sensor_data_bytes = struct.pack("I", data_to_be_saved[1])
-            data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
+            data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3],
                                     sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
-        
-        else: 
-            
+
+        else:
+
             sensor_data_bytes = struct.pack("f", data_to_be_saved[1])
-            data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3], 
+            data_array = bytearray([sensor_date_bytes[0], sensor_date_bytes[1], sensor_date_bytes[2], sensor_date_bytes[3],
                                     sensor_data_bytes[0], sensor_data_bytes[1], sensor_data_bytes[2], sensor_data_bytes[3]])
 
     if data[3] == 5:
@@ -376,7 +376,7 @@ def save_data(key, data_to_be_saved):
     else:
 
         memory_admin.guardarDato(0, data[1], data[2], data_array)
-    
+
     data[2] += data[3]
 
 # -----------------
@@ -385,7 +385,7 @@ def save_data(key, data_to_be_saved):
 # -----------------
 
 def update_page_table(update_page, this_page):
-    
+
     if(update_page):
 
         if(os.path.isfile("PageTableIndex.csv")):
@@ -412,12 +412,12 @@ def update_page_table(update_page, this_page):
         page_file = open("PageTableIndex.csv", "r+")
         store_buffer = []
         line = page_file.readline()
-        
+
         while line:
 
             store_buffer.append(line.strip("\n"))
             line = page_file.readline()
-        
+
         page_file.close()
         os.remove("PageTableIndex.csv")
 
@@ -428,7 +428,7 @@ def update_page_table(update_page, this_page):
             if(line.find(this_page) != -1):
                 data = sensor_manager[this_page]
                 new_page_file.write(line + "," + str(data[1]) + "\n")
-            
+
             else:
                 new_page_file.write(line + "\n")
 
@@ -446,7 +446,7 @@ def check_registered_sensor(sensor):
     for key in sensor_manager:
         if my_key == key:
             return
-    
+
     data_size = len(sensor) - 4
     sensor_manager[my_key] = [False, -1, -1, data_size]
     return

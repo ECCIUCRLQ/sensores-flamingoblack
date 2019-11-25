@@ -51,13 +51,13 @@ class interfazDistribuida:
 
 		minimum_available = 100000000
 		which_node = 0
-		
+
 		for key in self.node_manager:
-			
+
 			node_data = self.node_manager[key]
-			
+
 			if minimum_available > node_data[1] and node_data[1] > len(package[2]):
-				
+
 				minimum_available = node_data[1]
 				which_node = key
 
@@ -120,7 +120,7 @@ class interfazDistribuida:
 
 						sock_node.sendall(package)
 						reply_package = sock_node.recv(691204)	# tamaño de la página más grande, más op code (1 byte) y id page (1 byte), más dos por si algo
-		
+
 						if reply_package[0] == 2:
 
 							sock_node.close()
@@ -149,7 +149,7 @@ class interfazDistribuida:
 
 						dump1.append(page)
 						dump1.append(self.page_manager[page])
-			
+
 			else:
 
 				dump1.append(page)
@@ -161,18 +161,18 @@ class interfazDistribuida:
 
 				for numNode in self.changedNodes:
 
-					if numNode == node:	
+					if numNode == node:
 
 						dump2.append(node)
 						data = self.node_manager[node]
-						
+
 						ip_node = struct.pack("I", data[0])
 						size_node = struct.pack("I", data[1])
 
 						for i in range(4):
 
 							dump2.append(ip_node[i])
-						
+
 						for i in range(4):
 
 							dump2.append(size_node[i])
@@ -181,14 +181,14 @@ class interfazDistribuida:
 
 				dump2.append(node)
 				data = self.node_manager[node]
-				
+
 				ip_node = struct.pack("I", data[0])
 				size_node = struct.pack("I", data[1])
 
 				for i in range(4):
 
 					dump2.append(ip_node[i])
-				
+
 				for i in range(4):
 
 					dump2.append(size_node[i])
@@ -231,7 +231,7 @@ class interfazDistribuida:
 			node_amount -= 1
 
 class threadsDistributedInterface(threading.Thread):
-    
+
 	def __init__(self, name, interface):
 
 		threading.Thread.__init__(self)
@@ -303,7 +303,7 @@ class threadsDistributedInterface(threading.Thread):
 								break
 
 					elif paquete[0] == 1 or paquete[0] == 2:
-					
+
 						datos = manepack.desempacar_paquete_keepAlive(paquete)
 						print ("Ya hay interfaz activa. Me declaro pasiva.")
 
@@ -354,7 +354,7 @@ class threadsDistributedInterface(threading.Thread):
 					row2 = len(self.disInter.changedNodes)
 					dump1, dump2 = self.disInter.create_dump(1)
 					paquete = manepack.paquete_broadcast_keepAlive_ID_ID(2, row1, row2, dump1, dump2)
-					
+
 					activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
 					print ("Paquete keep alive con cambios enviado")
 
@@ -363,7 +363,7 @@ class threadsDistributedInterface(threading.Thread):
 					paquete = manepack.paquete_broadcast_keepAlive_ID_ID(2, 0, 0, 0, 0)
 					activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
 					print ("Paquete keep alive sin cambios enviado")
-				
+
 				time.sleep(2)
 
 			activeBroad.close()
@@ -416,7 +416,7 @@ class threadsDistributedInterface(threading.Thread):
 				ip_nodo_byte = socket.inet_aton(addr[0])
 				ip_nodo = struct.unpack("I", ip_nodo_byte)
 				espacio_nodo = manepack.desempacar_paquete_estoyAqui(paquete)
-				
+
 				self.disInter.node_manager[self.disInter.nodeCounter] = [ip_nodo[0], espacio_nodo]
 				self.disInter.changedNodes.append(self.disInter.nodeCounter)
 				self.disInter.nodeCounter += 1
@@ -434,11 +434,11 @@ class threadsDistributedInterface(threading.Thread):
 				memoryListener.listen()
 
 				conn, addr = memoryListener.accept()
-				
+
 				with conn:
 
 					while not self.kill:
-						
+
 						paquete = conn.recv(1024)
 
 						if(paquete[0] == 0):
@@ -473,7 +473,7 @@ class threadsDistributedInterface(threading.Thread):
 					paquete, addr = pasiveBroad.recvfrom(65536)
 
 					if paquete[0] == 1 or paquete[0] == 2:
-					
+
 						datos = manepack.desempacar_paquete_keepAlive(paquete)
 
 						if datos > 1:

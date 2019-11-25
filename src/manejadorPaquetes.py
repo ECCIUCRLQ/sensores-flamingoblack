@@ -8,7 +8,7 @@ import struct
 
 def paquete_para_guardar(op_code, id_page, page_size, data):
 
-    package_format = "=BBI" + str(page_size) + "s"
+    package_format = "=BBI" +str(page_size)+"s"
     package = struct.pack(package_format, op_code, id_page, page_size, data)
 
     return package
@@ -68,7 +68,7 @@ def paquete_respuesta_leer(op_code, id_page, data):
 # ------------------------
 
 def paquete_broadcast_quieroSer_ID_ID(op_code, mac_address, round_num):
- 
+
     package_format = "=B6sB"
     package = struct.pack(package_format, op_code, mac_address, round_num)
 
@@ -208,6 +208,11 @@ def desempacar_paquete_respuesta_leer(paquete, page_id, page_size):
 
             print ("Se obtuvo la página exitosamente")
             return data
+
+        else:
+
+            print ("ID obtuvo página incorrecta")
+            return 1
 
 # ------------------------
 # Método para ID cuando recibe un paquete quiero ser activo

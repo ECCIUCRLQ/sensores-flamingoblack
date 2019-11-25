@@ -34,9 +34,9 @@ class myPackage:
 my_pack = myPackage()
 
 def randomGenerator():
-	
+
 	global last_id
-	
+
 	while True:
 		my_random = random.randint(0, 255)
 		if last_id != my_random:
@@ -53,7 +53,7 @@ def randomFloatGenerator(inicio, fin):
 	my_random = random.uniform(inicio, fin)
 	return my_random
 
-#switch 
+#switch
 def whitenoise():
 	if(my_pack.sensor_id[3] == 0x01):
 		my_pack.sensor_type = 0x01
@@ -69,7 +69,7 @@ def flamingoblack():
 	elif(my_pack.sensor_id[3] == 0x02):
 		my_pack.sensor_type = 0x03
 	my_pack.data = 1.0
-	
+
 """ 		if(dato == 1):
 			my_pack.data = 0
 			dato = 0
@@ -122,10 +122,10 @@ def generarSensorIdyDato(grupoID):
 def crearDato():
 	my_pack.date = time.time()
 	my_pack.random_id = randomGenerator()
-	my_pack.sensor_id[0] = randomNumberGenerator(1, 6)
+	my_pack.sensor_id[0] = 1
 	my_pack.sensor_id[3] = randomNumberGenerator(1, 2)
 	generarSensorIdyDato(my_pack.sensor_id[0])
-	
+
 	print "\tID Grupo: ", my_pack.sensor_id[0]
 	print "\tID Sensor: ", my_pack.sensor_id[3]
 	print "\tTipo Sensor: ", my_pack.sensor_type
@@ -159,7 +159,7 @@ def saveData():
 
 	global saved_data
 	global my_queue
-	
+
 	saved_data[:] = []
 	i = 0
 
@@ -191,6 +191,6 @@ try:
 				saveData()
 				queue_overflow = True
 
-		time.sleep(3)
+		time.sleep(0.1)
 except KeyboardInterrupt:
 	print("\nClient shutdown.")
