@@ -8,9 +8,10 @@ import struct
 
 def paquete_para_guardar(op_code, id_page, page_size, data):
 
-    package_format = "=BBI" +str(page_size)+"s"
-    package = struct.pack(package_format, op_code, id_page, page_size, data)
+    package_format = "=BBI"
+    package = struct.pack(package_format, op_code, id_page, page_size)
 
+    package += data
     return package
 
 # ------------------------
@@ -56,9 +57,10 @@ def paquete_respuesta_guardar_ID_NM(op_code, id_page, node_size):
 
 def paquete_respuesta_leer(op_code, id_page, data):
 
-    package_format = "=BB" + str(len(data)) + "s"
-    package = struct.pack(package_format, op_code, id_page, data)
+    package_format = "=BB"
+    package = struct.pack(package_format, op_code, id_page)
 
+    package += data
     return package
 
 # ------------------------
