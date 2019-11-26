@@ -56,7 +56,7 @@ class interfazDistribuida:
 
 			node_data = self.node_manager[key]
 
-			if minimum_available > node_data[1] and node_data[1] > len(package[2]):
+			if minimum_available > node_data[1] and node_data[1] >= package[2]:
 
 				minimum_available = node_data[1]
 				which_node = key
