@@ -87,6 +87,7 @@ class interfazDistribuida:
 					self.page_manager[package[1]] = which_node
 					self.changedPages.append(package[1])
 					self.pageCounter += 1
+					self.sendChanges = True
 					node[1] = node_size
 					break
 
@@ -387,7 +388,7 @@ class threadsDistributedInterface(threading.Thread):
 			activeBroadListen = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			activeBroadListen.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-			activeBroadListen.bind(("", 15852))
+			activeBroadListen.bind(("", self.disInter.my_broadcast_port))
 
 			while not self.kill:
 
@@ -418,6 +419,8 @@ class threadsDistributedInterface(threading.Thread):
 
 			while not self.kill:
 
+				repetido = False
+
 				paquete, addr = nodeBroad.recvfrom(1024)
 				print ("Ip del nodo de memoria: " + str(addr[0]))
 
@@ -425,18 +428,27 @@ class threadsDistributedInterface(threading.Thread):
 				ip_nodo = struct.unpack("I", ip_nodo_byte)
 				espacio_nodo = manepack.desempacar_paquete_estoyAqui(paquete)
 
-				self.disInter.node_manager[self.disInter.nodeCounter] = [ip_nodo[0], espacio_nodo]
-				self.disInter.changedNodes.append(self.disInter.nodeCounter)
-				self.disInter.nodeCounter += 1
-				self.disInter.sendChanges = True
+				for key in self.disInter.node_manager:
+					
+					node_data = self.disInter.node_manager[key]
+					
+					if node_data[0] == ip_nodo[0]:
+						repetido = True
 
-				with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
+				if not repetido:
 
-					sock_node.connect((addr[0], 3114))
-					answer = 2
-					answer = answer.to_bytes(1, 'big')
-					sock_node.sendall(answer)
-					sock_node.close()
+					self.disInter.node_manager[self.disInter.nodeCounter] = [ip_nodo[0], espacio_nodo]
+					self.disInter.changedNodes.append(self.disInter.nodeCounter)
+					self.disInter.nodeCounter += 1
+					self.disInter.sendChanges = True
+
+					with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
+
+						sock_node.connect((addr[0], 3114))
+						answer = 2
+						answer = answer.to_bytes(1, 'big')
+						sock_node.sendall(answer)
+						sock_node.close()
 					
 			nodeBroad.close()
 
@@ -446,7 +458,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('10.1.138.103', 2000))
+				memoryListener.bind(('10.1.138.167', 2000))
 				
 				while not self.kill:
 				
@@ -460,7 +472,6 @@ class threadsDistributedInterface(threading.Thread):
 						if(paquete[0] == 0):
 
 							self.disInter.save_data(paquete)
-							self.disInter.sendChanges = True
 							answer_package = self.disInter.save_data_answer(paquete[1])
 							conn.sendall(answer_package)
 
