@@ -49,8 +49,8 @@ class interfazDistribuida:
 
 	def save_data(self, package):
 
-		minimum_available = 100000000
-		which_node = 0
+		minimum_available = 1000000000000
+		which_node = -1
 
 		for key in self.node_manager:
 
@@ -61,16 +61,23 @@ class interfazDistribuida:
 				minimum_available = node_data[1]
 				which_node = key
 
+		if which_node == -1:
+			
+			print ("No hay espacio en ningun nodo")
+			return 0
+
 		node = self.node_manager[which_node]
 
 		host = node[0]
+		host_bytes = struct.pack("I", host)
+		host_good_format = socket.inet_ntoa(host_bytes)
 
 		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
 
-			sock_node.connect(host, 3114)
+			sock_node.connect((host_good_format, 3114))
 
 			while True:
-
+				
 				sock_node.sendall(package)
 				reply = sock_node.recv(1024)
 				node_size = manepack.desempacar_paquete_guardar_respuesta_ID_NM(reply, package[1])
@@ -120,8 +127,9 @@ class interfazDistribuida:
 
 						sock_node.sendall(package)
 						reply_package = sock_node.recv(691204)	# tamaño de la página más grande, más op code (1 byte) y id page (1 byte), más dos por si algo
+						print (reply_package)
 
-						if reply_package[0] == 2:
+						if reply_package[0] == 3:
 
 							sock_node.close()
 							return reply_package
@@ -313,7 +321,7 @@ class threadsDistributedInterface(threading.Thread):
 							self.disInter.round = 3
 							break
 
-				time.sleep(4)
+				#time.sleep(4)
 
 			self.disInter.status = True
 			self.disInter.startChampions = False
@@ -429,6 +437,8 @@ class threadsDistributedInterface(threading.Thread):
 					answer = answer.to_bytes(1, 'big')
 					sock_node.sendall(answer)
 					sock_node.close()
+					
+			nodeBroad.close()
 
 		# Thread que escucha a la memoria local, sus request de guardar y pedir página
 
@@ -436,16 +446,16 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind((self.disInter.gloabal_ip, 2000))
-				memoryListener.listen()
+				memoryListener.bind(('10.1.138.103', 2000))
+				
+				while not self.kill:
+				
+					memoryListener.listen()
+					conn, addr = memoryListener.accept()
 
-				conn, addr = memoryListener.accept()
+					with conn:
 
-				with conn:
-
-					while not self.kill:
-
-						paquete = conn.recv(1024)
+						paquete = conn.recv(691208)
 
 						if(paquete[0] == 0):
 
@@ -458,6 +468,9 @@ class threadsDistributedInterface(threading.Thread):
 
 							answer_package = self.disInter.recover_data(paquete)
 							conn.sendall(answer_package)
+							
+				memoryListener.close()
+							
 
 		# Thread que maneja la interfaz pasiva, siempre va estar escuchando broadcast por parte del activo
 		# Si el paquete keep alive trae datos, actualiza las tablas de la interfaz

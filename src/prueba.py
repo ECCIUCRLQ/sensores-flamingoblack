@@ -5,6 +5,11 @@ import time
 import sys
 import uuid
 
+nodeManager = {
+	1:[151,15000],
+	2:[15818,100]
+}
+
 page_manager = {
     1:5,
     2:4,
@@ -62,6 +67,25 @@ def servidor():
         server.sendto(paquete, ('<broadcast>', 37020))
         print ("Mensaje enviado!")
         time.sleep(1)
+
+def cliente_tcp():
+	
+	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
+
+		sock_node.connect(('127.0.0.1', 2000))
+		
+		busDatos = bytearray(20)
+		id_pagina = 148
+		tamano_pagina = 20
+    
+		for i in range (20):
+	
+			busDatos[i] = 15
+
+		paquete_pagina = manepack.paquete_para_guardar(0, id_pagina, tamano_pagina, busDatos)
+    
+		sock_node.sendall(paquete_pagina)
+		sock_node.close()
 
 def create_dump():
 
@@ -124,109 +148,139 @@ def read_dump(data):
 
 if len(sys.argv) > 1:
 
-    if sys.argv[1] == '0':
+	if sys.argv[1] == '0':
 
-        cliente()
+		cliente()
 
-    elif sys.argv[1 == '1']:
+	elif sys.argv[1] == '1':
 
-        servidor()
+		servidor()
+		
+	elif sys.argv[1] == '2':
+		
+		cliente_tcp()
 
 else:
 
-    op_code = 2
-    id_page = 48
-    size_page = 11
-    data_bytes = bytearray([1,15,25,35,45,148,250,15,17,24,21])
+	op_code = 2
+	id_page = 48
+	size_page = 11
+	data_bytes = bytearray([1,15,25,35,45,148,250,15,17,24,21])
 
-    # paquete y desempaque estoy aqui
+	# paquete y desempaque estoy aqui
 
-    paqueteestoy = manepack.paquete_broadcast_estoyAqui_NM_ID(op_code, 15478)
-    espacio_nodo = manepack.desempacar_paquete_estoyAqui(paqueteestoy)
+	paqueteestoy = manepack.paquete_broadcast_estoyAqui_NM_ID(op_code, 15478)
+	espacio_nodo = manepack.desempacar_paquete_estoyAqui(paqueteestoy)
 
-    # paquete y desempaque quier ser
+	# paquete y desempaque quier ser
 
-    mac_byte = uuid.getnode().to_bytes(6, 'little')
+	mac_byte = uuid.getnode().to_bytes(6, 'little')
 
-    paquete_quiero = manepack.paquete_broadcast_quieroSer_ID_ID(1, mac_byte, 4)
-    mac_extraida, ronda = manepack.desempacar_paquete_quieroSer(paquete_quiero)
+	paquete_quiero = manepack.paquete_broadcast_quieroSer_ID_ID(1, mac_byte, 4)
+	mac_extraida, ronda = manepack.desempacar_paquete_quieroSer(paquete_quiero)
 
-    # paquete y desempaque soyactivo
+	# paquete y desempaque soyactivo
 
-    datos = []
-    dump1 = bytearray([1,8,0x10,3,2,4])
-    dump2 = bytearray([1,3,2,6,5,7,8,0x10,4])
-    paquetesoy = manepack.paquete_broadcast_soyActivo_ID_ID(op_code, 3, 1, dump1, dump2)
-    datos = manepack.desempacar_paquete_soyActivo(paquetesoy)
-    print (datos)
+	datos = []
+	dump1 = bytearray([1,8,0x10,3,2,4])
+	dump2 = bytearray([1,3,2,6,5,7,8,0x10,4])
+	paquetesoy = manepack.paquete_broadcast_soyActivo_ID_ID(op_code, 3, 1, dump1, dump2)
+	datos = manepack.desempacar_paquete_soyActivo(paquetesoy)
+	print (datos)
 
-    # paquete y desempaque keepalive con y sin cambios
+	# paquete y desempaque keepalive con y sin cambios
 
-    paqueteKA = manepack.paquete_broadcast_keepAlive_ID_ID(op_code, 3, 1, dump1, dump2)
-    datos2 = manepack.desempacar_paquete_keepAlive(paqueteKA)
-    print (datos2)
+	paqueteKA = manepack.paquete_broadcast_keepAlive_ID_ID(op_code, 3, 1, dump1, dump2)
+	datos2 = manepack.desempacar_paquete_keepAlive(paqueteKA)
+	print (datos2)
 
-    paqueteKA = manepack.paquete_broadcast_keepAlive_ID_ID(op_code, 0, 0, 0, 0)
-    datos2 = manepack.desempacar_paquete_keepAlive(paqueteKA)
-    print (datos2)
+	paqueteKA = manepack.paquete_broadcast_keepAlive_ID_ID(op_code, 0, 0, 0, 0)
+	datos2 = manepack.desempacar_paquete_keepAlive(paqueteKA)
+	print (datos2)
 
-    # paquete y desempaque respuesta leer 
+	# paquete y desempaque respuesta leer 
 
-    paqueteresleer = manepack.paquete_respuesta_leer(op_code, id_page, dump1)
-    datos3 = manepack.desempacar_paquete_respuesta_leer(paqueteresleer, id_page, 6)
-    print (datos3)
+	paqueteresleer = manepack.paquete_respuesta_leer(op_code, id_page, dump1)
+	datos3 = manepack.desempacar_paquete_respuesta_leer(paqueteresleer, id_page, 6)
+	print (datos3)
 
-    # paquete y desempaque respuesta guardar ID_NM
+	# paquete y desempaque respuesta guardar ID_NM
 
-    paqueteResGuaID_NM = manepack.paquete_respuesta_guardar_ID_NM(op_code, id_page, 1454)
-    datos4 = manepack.desempacar_paquete_guardar_respuesta_ID_NM(paqueteResGuaID_NM, id_page)
+	paqueteResGuaID_NM = manepack.paquete_respuesta_guardar_ID_NM(op_code, id_page, 1454)
+	datos4 = manepack.desempacar_paquete_guardar_respuesta_ID_NM(paqueteResGuaID_NM, id_page)
 
-    # paquete y desempaque respuesta guardar ML_ID
+	# paquete y desempaque respuesta guardar ML_ID
 
-    paqueteResGuaML_ID = manepack.paquete_respuesta_guardar_ML_ID(op_code, id_page)
-    datos5 = manepack.desempacar_paquete_guardar_respuesta_ML_ID(paqueteResGuaML_ID, id_page)
+	paqueteResGuaML_ID = manepack.paquete_respuesta_guardar_ML_ID(op_code, id_page)
+	datos5 = manepack.desempacar_paquete_guardar_respuesta_ML_ID(paqueteResGuaML_ID, id_page)
 
-    # paquete para guardar, tanto en ID como NM
+	# paquete para guardar, tanto en ID como NM
 
-    paqueteGua = manepack.paquete_para_guardar(op_code, id_page, 6, dump1)
-    print (paqueteGua)
+	paqueteGua = manepack.paquete_para_guardar(op_code, id_page, 6, dump1)
+	print (paqueteGua)
 
-    # paquete para leer, tanto en ID como NM
+	# paquete para leer, tanto en ID como NM
 
-    paqueteLee = manepack.paquete_para_leer(op_code, id_page)
-    print (paqueteLee)
+	paqueteLee = manepack.paquete_para_leer(op_code, id_page)
+	print (paqueteLee)
 
-    # prueba dumps
+	# prueba dumps
 
-    dump1, dump2 = create_dump()
-    paqueteSoyActivo = manepack.paquete_broadcast_soyActivo_ID_ID(2, 3, 2, dump1, dump2)
+	dump1, dump2 = create_dump()
+	paqueteSoyActivo = manepack.paquete_broadcast_soyActivo_ID_ID(2, 3, 2, dump1, dump2)
 
-    datos6 = manepack.desempacar_paquete_keepAlive(paqueteSoyActivo)
-    print (datos6)
+	datos6 = manepack.desempacar_paquete_keepAlive(paqueteSoyActivo)
+	print (datos6)
 
-    read_dump(datos6)
-    print (page_manager)
-    print (page_manager2)
-    print (node_manager)
-    print (node_manager2)
+	read_dump(datos6)
+	print (page_manager)
+	print (page_manager2)
+	print (node_manager)
+	print (node_manager2)
 
-    # prubea empaquetar y desempaquetar ip
+	# prubea empaquetar y desempaquetar ip
 
-    ip = socket.inet_aton('192.168.1.1')
-    print (ip)
+	ip = socket.inet_aton('192.168.1.1')
+	print (ip)
+	
+	ip_nodo = struct.unpack("I", ip)
+	print (ip_nodo[0])
+	
+	ip_byte = struct.pack("I", ip_nodo[0])
+	print (ip_byte)
 
-    ip_un = socket.inet_ntoa(ip)
-    print (ip_un)
+	ip_un = socket.inet_ntoa(ip)
+	print (ip_un)
 
-    # prueba paquete guardar
+	# prueba paquete guardar
 
-    busDatos = bytearray(20)
-    id_pagina = 148
-    tamano_pagina = 20
-    
-    for i in range (20):
+	busDatos = bytearray(20)
+	id_pagina = 148
+	tamano_pagina = 20
+	
+	for i in range (20):
 
-        busDatos[i] = 15
+		busDatos[i] = 15
 
-    paquete_pagina = manepack.paquete_para_guardar(0, id_pagina, tamano_pagina, busDatos)
-    print (paquete_pagina)
+	paquete_pagina = manepack.paquete_para_guardar(0, id_pagina, tamano_pagina, busDatos)
+	print (paquete_pagina)
+
+	minimum_available = 1000000000000
+	which_node = -1
+
+	for key in nodeManager:
+
+		node_data = nodeManager[key]
+
+		if minimum_available > node_data[1] and node_data[1] >= 150:
+
+			minimum_available = node_data[1]
+			which_node = key
+
+	if which_node == -1:
+			
+		print ("No hay espacio en ningun nodo")
+
+	else:
+		
+		print (which_node)
