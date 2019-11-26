@@ -321,6 +321,8 @@ class threadsDistributedInterface(threading.Thread):
 							self.disInter.update_with_dump(datos)
 							self.disInter.round = 3
 							break
+							
+						break
 
 				#time.sleep(4)
 
@@ -333,7 +335,7 @@ class threadsDistributedInterface(threading.Thread):
 
 		elif(my_name == "timeout"):
 
-			time.sleep(3)
+			time.sleep(10)
 			self.disInter.timeout_event.set()
 
 		# Thread activo, este thread inicialmente cuando se activa manda el mensaje soy activo y hace un dump de sus tablas
@@ -458,7 +460,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('10.1.138.167', 2000))
+				memoryListener.bind(('10.1.138.5', 2000))
 				
 				while not self.kill:
 				
