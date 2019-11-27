@@ -262,6 +262,8 @@ class threadsDistributedInterface(threading.Thread):
 
 			interBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+			interBroad.setblocking(0)
 
 			interBroad.bind(("", self.disInter.my_broadcast_port))
 
@@ -269,14 +271,14 @@ class threadsDistributedInterface(threading.Thread):
 
 				if self.disInter.timeout_event.is_set():
 
-						# Me apropio de la IP global para la interfaz
+					# Me apropio de la IP global para la interfaz
 
-						#os.system('ifconfig eth0 down')
-						#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-						#os.system('ifconfig eth0 up')
+					#os.system('ifconfig eth0 down')
+					#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+					#os.system('ifconfig eth0 up')
 
-						self.disInter.active = True
-						break
+					self.disInter.active = True
+					break
 
 				else:
 
@@ -284,44 +286,93 @@ class threadsDistributedInterface(threading.Thread):
 					interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
 					print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
 
-					paquete, addr = interBroad.recvfrom(1024)
+					paquete_respuesta = []
 
-					if paquete[0] == 0:
+					while not paquete_respuesta:
 
-						datos = manepack.desempacar_paquete_quieroSer(paquete)
+						try:
 
-						# esta condicion debe ser diferente de, si está ogual a, entonces es para prueba
-						if datos[0] != self.disInter.raw_mac_address:
+							paquete_respuesta, addr = interBroad.recvfrom(1024)
+						
+						except socket.error:
 
-							if datos[1] == self.disInter.round:
+							pass
 
-								if datos[0] < self.disInter.raw_mac_address:
+						if paquete_respuesta:
 
-									self.disInter.round += 1
+							if paquete_respuesta[0] == 0:
 
-								else:
+								datos = manepack.desempacar_paquete_quieroSer(paquete_respuesta)
+
+								if datos[0] == self.disInter.raw_mac_address:
+
+									paquete_respuesta = []
+
+						if self.disInter.timeout_event.is_set():
+
+							# Me apropio de la IP global para la interfaz
+
+							#os.system('ifconfig eth0 down')
+							#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+							#os.system('ifconfig eth0 up')
+
+							self.disInter.active = True
+							break
+
+					if paquete_respuesta:
+
+						if paquete_respuesta[0] == 0:
+
+							datos = manepack.desempacar_paquete_quieroSer(paquete_respuesta)
+
+							# esta condicion debe ser diferente de, si está ogual a, entonces es para prueba
+							if datos[0] != self.disInter.raw_mac_address:
+
+								print ("Compito contra una interfaz con MAC: " + str(datos[0]))
+								print ("Compito contra una interfaz con ronda: " + str(datos[1]))
+
+								if datos[1] == self.disInter.round:
+
+									if datos[0] < self.disInter.raw_mac_address:
+
+										self.disInter.round += 1
+
+									else:
+
+										self.disInter.round = 3
+										print ("He perdido la champions, me delcaro interfaz pasiva")
+										break
+
+								elif datos[1] > self.disInter.round:
 
 									self.disInter.round = 3
-									print ("He perdido la champions, me delcaro interfaz pasiva")
+									print ("Estoy atrasado en la champions, así que me declaro activo")
 									break
 
-							elif datos[1] > self.disInter.round:
-
-								self.disInter.round = 3
-								print ("Estoy atrasado en la champions, así que me declaro activo")
-								break
-
-					elif paquete[0] == 1 or paquete[0] == 2:
-
-						datos = manepack.desempacar_paquete_keepAlive(paquete)
-						print ("Ya hay interfaz activa. Me declaro pasiva.")
-
-						if datos > 1:
+						elif paquete_respuesta[0] == 1:
+						
+							print ("Ya hay interfaz activa. Me declaro pasiva.")
+							datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
 
 							self.disInter.update_with_dump(datos)
 							self.disInter.round = 3
 							break
-							
+
+						elif paquete_respuesta[0] == 2:
+
+							print ("Ya hay interfaz activa. Me declaro pasiva.")
+							datos = manepack.desempacar_paquete_keepAlive(paquete_respuesta)
+
+							if datos > 1:
+
+								self.disInter.update_with_dump(datos)
+								self.disInter.round = 3
+								break
+								
+							break
+
+					else:
+
 						break
 
 				#time.sleep(4)
@@ -345,6 +396,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			activeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			activeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			activeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
 			activeBroad.bind(("", 44444))
 
@@ -389,6 +441,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			activeBroadListen = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 			activeBroadListen.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			activeBroadListen.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
 			activeBroadListen.bind(("", self.disInter.my_broadcast_port))
 
@@ -417,6 +470,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			nodeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 			nodeBroad.bind(("", 5000))
 
 			while not self.kill:
@@ -451,7 +505,7 @@ class threadsDistributedInterface(threading.Thread):
 						answer = answer.to_bytes(1, 'big')
 						sock_node.sendall(answer)
 						sock_node.close()
-					
+
 			nodeBroad.close()
 
 		# Thread que escucha a la memoria local, sus request de guardar y pedir página
@@ -460,7 +514,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('10.1.138.5', 2000))
+				memoryListener.bind(('192.168.50.51', 2000))
 				
 				while not self.kill:
 				
@@ -481,7 +535,7 @@ class threadsDistributedInterface(threading.Thread):
 
 							answer_package = self.disInter.recover_data(paquete)
 							conn.sendall(answer_package)
-							
+
 				memoryListener.close()
 							
 
@@ -493,18 +547,24 @@ class threadsDistributedInterface(threading.Thread):
 
 			pasiveBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			pasiveBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+			pasiveBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 			pasiveBroad.bind(("", self.disInter.my_broadcast_port))
-			pasiveBroad.settimeout(3)
-
-			timeout = select.select([pasiveBroad], [], [], 3)
+			#pasiveBroad.settimeout(3)
 
 			while not self.kill:
+
+				timeout = select.select([pasiveBroad], [], [], 3)
 
 				if timeout[0]:
 
 					paquete, addr = pasiveBroad.recvfrom(65536)
 
-					if paquete[0] == 1 or paquete[0] == 2:
+					if paquete[0] == 1:
+
+						datos = manepack.desempacar_paquete_soyActivo(paquete)
+						self.disInter.update_with_dump(datos)
+					
+					elif paquete[0] == 2:
 
 						datos = manepack.desempacar_paquete_keepAlive(paquete)
 
