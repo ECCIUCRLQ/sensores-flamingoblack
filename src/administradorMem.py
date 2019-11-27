@@ -317,6 +317,10 @@ class AdministradorMem:
             busDatos.append(fecha)
             busDatos.append(dato)
 
+        self.tablaPaginas[listaPaginas[-1]] = -1
+        self.colaPaginas.remove(listaPaginas[-1])
+        self.vaciarPagina(tamano,posicion)
+
         return busDatos
 
     """
