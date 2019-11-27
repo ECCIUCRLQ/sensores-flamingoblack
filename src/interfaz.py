@@ -254,6 +254,7 @@ def recover_data_from_memory(plot_id):
             pages_string.pop(0)
 
             num_pages = map(int, pages_string)
+            print(num_pages)
 
             if data[3] == 5:
 
@@ -490,7 +491,7 @@ def main():
             print ("Killing threads\n")
             threadinter.kill = True
             threadplot.kill = True
-            memory_admin.salvarMemPrincipal()
+            #memory_admin.salvarMemPrincipal()
 
             '''
 

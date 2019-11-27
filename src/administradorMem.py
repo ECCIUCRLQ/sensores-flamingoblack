@@ -13,7 +13,7 @@ class AdministradorMem:
 
         #Conexion con interfaz distribuida
         self.puertoID = 2000
-        self.hostID = "127.0.0.1"
+        self.hostID = "10.1.137.192"
         self.socketID = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         conexion = False
@@ -43,6 +43,7 @@ class AdministradorMem:
         llena = False
         if (len(self.colaPaginas) == 4):
             llena = True
+            print("Esta llena")
 
         return llena
 
@@ -50,6 +51,7 @@ class AdministradorMem:
         return self.colaPaginas.pop()
 
     def enviarPagMemSecundaria(self, tamano, numPagina):
+        print("Pagina llena, enviando a memoria secundaria...")
         busDatos = bytearray(1)
         if (tamano == 0):
             busDatos = bytearray(40000)
@@ -69,20 +71,30 @@ class AdministradorMem:
         else:
             tamanoBytes = 500
 
+        #pagEnBytes = struct.pack('B',numPagina)
+
+
         paquete_pagina = manepack.paquete_para_guardar(0,numPagina,tamanoBytes,busDatos)
+
 
         pagina_no_recibida = True;
 
         while(pagina_no_recibida):
-            self.socketID.sendall(paquete_pagina)
-
-            time.sleep(2)
-
-            paquete_respuesta = self.socketID.recv(1024)
+            self.socketID.send(paquete_pagina)
+            print("Enviada")
+            paquete_respuesta = bytearray()
+            paq = self.socketID.recv(1024)
+            print(type(paq))
+            paquete_respuesta += paq
 
             if(manepack.desempacar_paquete_guardar_respuesta_ML_ID(paquete_respuesta,numPagina) == 0):
                 pagina_no_recibida = False
+            else:
+                time.sleep(2)
+                print("Intentando nuevamente...")
 
+
+        print("Pagina enviada exitosamente")
         self.tablaPaginas[numPagina] = -1
         self.colaPaginas.remove(numPagina)
         self.vaciarPagina(tamano,posicion)
@@ -100,17 +112,25 @@ class AdministradorMem:
 
         paquete_pagina = manepack.paquete_para_leer(1,numPagina)
 
+
         pagina_no_leida = True
 
         while(pagina_no_leida):
 
+            print(paquete_pagina)
+
             self.socketID.sendall(paquete_pagina)
 
-            time.sleep(2)
+            paquete_respuesta = bytearray()
 
-            paquete_respuesta = self.socketID.recv(1024)
+            pack = self.socketID.recv(50000)
+
+            print(type(pack))
+            paquete_respuesta += pack
 
             busDatos = manepack.desempacar_paquete_respuesta_leer(paquete_respuesta,numPagina,tamanoBytes)
+
+            print(busDatos)
 
             if(busDatos !=1):
                 pagina_no_leida = False
@@ -145,7 +165,7 @@ class AdministradorMem:
         return posicion
 
     def swapPaginas(self,tamano,pagNueva):
-        posicion = buscarPosicionVacia(tamano)
+        posicion = self.buscarPosicionVacia(tamano)
 
         self.cargarPagMemSecundaria(tamano,pagNueva,posicion)
         self.colaPaginas.insert(0,pagNueva)
@@ -155,7 +175,7 @@ class AdministradorMem:
     def leerUnDato(self,tamano,posicion,tamanoDato,formato):
         datoBytes = bytearray(tamanoDato)
         for k in range (tamanoDato):
-            datoBytes[k] = self.memoriaPrincipal[tamano][posicion+k]
+            datoBytes[k] = self.memoriaPrincipal[posicion+k]
 
         datoReal = 0
         if(tamano == 0):
@@ -187,6 +207,7 @@ class AdministradorMem:
     """
     def guardarDato(self,tamano,numPagina,offset,dato):
         posicion = -1
+        print(offset)
         if (self.pagEstaEnPrincipal(numPagina)):
             posicion = self.tablaPaginas[numPagina]
 
@@ -208,6 +229,9 @@ class AdministradorMem:
                 self.enviarPagMemSecundaria(tamano,numPagina)
         elif tamano == 1:
             if offset == 495:
+                print("Esta por llenarse")
+                print(self.tablaPaginas)
+                print(numPagina)
                 self.enviarPagMemSecundaria(tamano,numPagina)
 
     """
@@ -221,6 +245,7 @@ class AdministradorMem:
                       la funcion.
     """
     def reservarPagina(self,tamano):
+        print("Reserve una pagina")
         posicion = 0
         if self.getMemPrinLlena(tamano):
             paginaCambiar = self.getPaginaPorCambiar(tamano)
@@ -295,10 +320,6 @@ class AdministradorMem:
             fecha , dato = self.leerUnDato(tamano,j,tamanoDato,formato8Bytes)
             busDatos.append(fecha)
             busDatos.append(dato)
-
-        self.tablaPaginas[listaPaginas[-1]] = -1
-        self.colaPaginas.remove(listaPaginas[-1])
-        self.vaciarPagina(tamano,posicion)
 
         return busDatos
 
