@@ -218,6 +218,8 @@ class interfazDistribuida:
 
 		page_iterator = 0
 
+		self.pageCounter += page_amount
+
 		while page_amount > 0:
 
 			self.page_manager[page_dump[page_iterator]] = page_dump[page_iterator+1]
@@ -234,10 +236,17 @@ class interfazDistribuida:
 			ip = struct.unpack("I", node_dump[node_iterator+1:(node_iterator+1)+4])
 			size = struct.unpack("I", node_dump[(node_iterator+1)+4:((node_iterator+1)+4)+4])
 
-			value = [ip, size]
-			self.node_manager[node_dump[node_iterator]] = value
+			self.node_manager[node_dump[node_iterator]] = [ip, size]
 			node_iterator += 9
 			node_amount -= 1
+
+		for key in self.node_manager:
+
+			self.nodeCounter += 1
+
+		for key in self.page_manager:
+
+			self.pageCounter += 1
 
 class threadsDistributedInterface(threading.Thread):
 
@@ -265,6 +274,7 @@ class threadsDistributedInterface(threading.Thread):
 			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 			interBroad.setblocking(0)
 
+			# broadcast dentro del lab 
 			interBroad.bind(("", self.disInter.my_broadcast_port))
 
 			while not self.kill:
@@ -293,7 +303,7 @@ class threadsDistributedInterface(threading.Thread):
 						while not paquete_respuesta:
 
 							try:
-
+								#print ("intento recibir")
 								paquete_respuesta, addr = interBroad.recvfrom(1024)
 							
 							except socket.error:
@@ -320,6 +330,7 @@ class threadsDistributedInterface(threading.Thread):
 
 								self.disInter.active = True
 								break
+					
 
 						if paquete_respuesta:
 
@@ -337,6 +348,7 @@ class threadsDistributedInterface(threading.Thread):
 
 										if datos[0] < self.disInter.raw_mac_address:
 
+											print ("Gane la ronda")
 											self.disInter.round += 1
 
 										else:
@@ -350,15 +362,17 @@ class threadsDistributedInterface(threading.Thread):
 
 										self.disInter.round = 3
 										self.disInter.status = True
-										print ("Estoy atrasado en la champions, así que me declaro activo")
+										print ("Estoy atrasado en la champions, así que me declaro pasi")
 										break
 
 							elif paquete_respuesta[0] == 1:
 							
 								print ("Ya hay interfaz activa. Me declaro pasiva.")
 								datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
+								print (datos)
 
 								self.disInter.update_with_dump(datos)
+								print (self.disInter.node_manager)
 								self.disInter.round = 3
 								self.disInter.status = True
 								break
@@ -380,6 +394,9 @@ class threadsDistributedInterface(threading.Thread):
 						else:
 
 							break
+					
+					if not self.disInter.status:
+						break
 
 				#time.sleep(4)
 
