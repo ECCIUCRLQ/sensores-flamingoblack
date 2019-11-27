@@ -55,8 +55,9 @@ class interfazDistribuida:
 		for key in self.node_manager:
 
 			node_data = self.node_manager[key]
+			node_size = struct.unpack("I", package[2:6])
 
-			if minimum_available > node_data[1] and node_data[1] >= package[2]:
+			if minimum_available > node_data[1] and node_data[1] >= node_size[0]:
 
 				minimum_available = node_data[1]
 				which_node = key
@@ -92,6 +93,7 @@ class interfazDistribuida:
 					break
 
 			sock_node.close()
+			return 1
 
 	# ------------------
 	# Método que devuelve la respuesta al ML, cuuando el ML pide guardar
@@ -218,8 +220,6 @@ class interfazDistribuida:
 
 		page_iterator = 0
 
-		self.pageCounter += page_amount
-
 		while page_amount > 0:
 
 			self.page_manager[page_dump[page_iterator]] = page_dump[page_iterator+1]
@@ -236,7 +236,7 @@ class interfazDistribuida:
 			ip = struct.unpack("I", node_dump[node_iterator+1:(node_iterator+1)+4])
 			size = struct.unpack("I", node_dump[(node_iterator+1)+4:((node_iterator+1)+4)+4])
 
-			self.node_manager[node_dump[node_iterator]] = [ip, size]
+			self.node_manager[node_dump[node_iterator]] = [ip[0], size[0]]
 			node_iterator += 9
 			node_amount -= 1
 
@@ -273,6 +273,8 @@ class threadsDistributedInterface(threading.Thread):
 			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 			interBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 			interBroad.setblocking(0)
+
+			doBreak = False
 
 			# broadcast dentro del lab 
 			interBroad.bind(("", self.disInter.my_broadcast_port))
@@ -356,13 +358,15 @@ class threadsDistributedInterface(threading.Thread):
 											self.disInter.round = 3
 											self.disInter.status = True
 											print ("He perdido la champions, me delcaro interfaz pasiva")
+											doBreak = True
 											break
 
 									elif datos[1] > self.disInter.round:
 
 										self.disInter.round = 3
 										self.disInter.status = True
-										print ("Estoy atrasado en la champions, así que me declaro pasi")
+										print ("Estoy atrasado en la champions, así que me declaro pasiva")
+										doBreak = True
 										break
 
 							elif paquete_respuesta[0] == 1:
@@ -375,6 +379,7 @@ class threadsDistributedInterface(threading.Thread):
 								print (self.disInter.node_manager)
 								self.disInter.round = 3
 								self.disInter.status = True
+								doBreak = True
 								break
 
 							elif paquete_respuesta[0] == 2:
@@ -382,11 +387,12 @@ class threadsDistributedInterface(threading.Thread):
 								print ("Ya hay interfaz activa. Me declaro pasiva.")
 								datos = manepack.desempacar_paquete_keepAlive(paquete_respuesta)
 
-								if datos > 1:
+								if datos != 0:
 
 									self.disInter.update_with_dump(datos)
 									self.disInter.round = 3
 									self.disInter.status = True
+									doBreak = True
 									break
 									
 								break
@@ -395,7 +401,7 @@ class threadsDistributedInterface(threading.Thread):
 
 							break
 					
-					if not self.disInter.status:
+					if doBreak:
 						break
 
 				#time.sleep(4)
@@ -409,7 +415,7 @@ class threadsDistributedInterface(threading.Thread):
 
 		elif(my_name == "timeout"):
 
-			time.sleep(4)
+			time.sleep(5)
 			self.disInter.timeout_event.set()
 
 		# Thread activo, este thread inicialmente cuando se activa manda el mensaje soy activo y hace un dump de sus tablas
@@ -539,25 +545,35 @@ class threadsDistributedInterface(threading.Thread):
 
 				memoryListener.bind(('10.1.137.192', 2000))
 				
+				memoryListener.listen()
+				conn, addr = memoryListener.accept()
+
 				while not self.kill:
-				
-					memoryListener.listen()
-					conn, addr = memoryListener.accept()
 
-					with conn:
+					#with conn:
 
-						paquete = conn.recv(691208)
+					paquete = conn.recv(691208)
 
-						if(paquete[0] == 0):
+					if(paquete[0] == 0):
 
-							self.disInter.save_data(paquete)
+						saved = self.disInter.save_data(paquete)
+
+						if saved:
+						
+							page_size = struct.unpack("I", paquete[2:6])
+							print ("Se guardó página con ID: " + str(paquete[1]) + " y tamaño: " + str(page_size[0]))
 							answer_package = self.disInter.save_data_answer(paquete[1])
 							conn.sendall(answer_package)
+						
+						else:
 
-						elif(paquete[0] == 1):
-
-							answer_package = self.disInter.recover_data(paquete)
+							answer_package = manepack.paquete_respuesta_guardar_ML_ID(4, paquete[1])
 							conn.sendall(answer_package)
+
+					elif(paquete[0] == 1):
+
+						answer_package = self.disInter.recover_data(paquete)
+						conn.sendall(answer_package)
 
 				memoryListener.close()
 							
@@ -576,7 +592,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			while not self.kill:
 
-				timeout = select.select([pasiveBroad], [], [], 3)
+				timeout = select.select([pasiveBroad], [], [], 5)
 
 				if timeout[0]:
 
@@ -591,7 +607,7 @@ class threadsDistributedInterface(threading.Thread):
 
 						datos = manepack.desempacar_paquete_keepAlive(paquete)
 
-						if datos > 1:
+						if datos != 0:
 
 							self.disInter.update_with_dump(datos)
 
