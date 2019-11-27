@@ -231,8 +231,8 @@ def desempacar_paquete_quieroSer(paquete):
     else:
 
         mac = mac1 | (mac2 << 16)
-        print ("Una interfaz se ha reportado con su MAC: " + str(mac))
-        print ("Una interfaz se ha reportado con ronda: " + str(ronda))
+        #print ("Una interfaz se ha reportado con su MAC: " + str(mac))
+        #print ("Una interfaz se ha reportado con ronda: " + str(ronda))
         return [mac, ronda]
 
 # ------------------------
@@ -260,6 +260,7 @@ def desempacar_paquete_soyActivo(paquete):
         tamano_datos2 = filas_tabla2 * 9
         datos_tabla2 = paquete[(3+tamano_datos1):(3+tamano_datos1+tamano_datos2)]
 
+        print ("Paquete soy activo recibido")
         return [filas_tabla1, filas_tabla2, datos_tabla1, datos_tabla2]
 
 # ------------------------
@@ -281,12 +282,12 @@ def desempacar_paquete_keepAlive(paquete):
 
         if paquete[1] and paquete[2] > 0:
 
-            print ("Paquete Keep Alive con cambios")
+            print ("Paquete Keep Alive con cambios recibido")
             return desempacar_paquete_soyActivo(paquete)
 
         else:
 
-            print ("Paquete Keep Alive sin cambios")
+            print ("Paquete Keep Alive sin cambios recibido")
             return 0
 
 # ------------------------
