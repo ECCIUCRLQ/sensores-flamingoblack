@@ -13,7 +13,7 @@ class AdministradorMem:
 
         #Conexion con interfaz distribuida
         self.puertoID = 2000
-        self.hostID = "10.1.137.192"
+        self.hostID = "10.1.137.102"
         self.socketID = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         conexion = False
@@ -123,14 +123,16 @@ class AdministradorMem:
 
             paquete_respuesta = bytearray()
 
-            pack = self.socketID.recv(50000)
+            time.sleep(8)
+
+            pack = self.socketID.recv(691208)
 
             print(type(pack))
             paquete_respuesta += pack
 
             busDatos = manepack.desempacar_paquete_respuesta_leer(paquete_respuesta,numPagina,tamanoBytes)
 
-            print(busDatos)
+            print(len(busDatos))
 
             if(busDatos !=1):
                 pagina_no_leida = False
@@ -142,6 +144,7 @@ class AdministradorMem:
             longitud = 500
 
         for i in range(posicion,posicion+longitud):
+            print(i , " ")
             self.memoriaPrincipal[i] = busDatos[i-posicion]
 
         self.tablaPaginas[numPagina] = posicion
@@ -321,6 +324,7 @@ class AdministradorMem:
             busDatos.append(fecha)
             busDatos.append(dato)
 
+        print (len(busDatos))
         return busDatos
 
     """

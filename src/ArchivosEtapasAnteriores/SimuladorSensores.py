@@ -122,7 +122,7 @@ def generarSensorIdyDato(grupoID):
 def crearDato():
 	my_pack.date = time.time()
 	my_pack.random_id = randomGenerator()
-	my_pack.sensor_id[0] = 1
+	my_pack.sensor_id[0] = 2
 	my_pack.sensor_id[3] = randomNumberGenerator(1, 2)
 	generarSensorIdyDato(my_pack.sensor_id[0])
 
@@ -191,6 +191,6 @@ try:
 				saveData()
 				queue_overflow = True
 
-		time.sleep(0.1)
+		time.sleep(0.01)
 except KeyboardInterrupt:
 	print("\nClient shutdown.")

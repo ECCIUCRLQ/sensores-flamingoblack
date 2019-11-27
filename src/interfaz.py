@@ -74,7 +74,7 @@ class threadsInterface(threading.Thread):
                     print ("No hay datos (" + my_name + ")\n")
                     lock.release()
 
-                time.sleep(0.1)
+                time.sleep(0.01)
 
         else:
 
@@ -191,24 +191,27 @@ def obtain_data_from_recolector():
 
 def send_through_queue(data):
 
-    if (len(data) > (15000*8)):
+    print(len(data))
+    if (len(data) > (16000)):
 
+        print ("Data mayor a: 16000")
         total = len(data)
         size = 0
 
         while size < len(data):
 
-            if total > (15000*8):
+            if total > (16000):
 
                 index = 0
                 part_of_data = []
 
-                while index < (15000*8):
+                while index < (16000):
 
                     part_of_data[index] = data[size]
                     size += 1
                     index += 1
 
+                print (len(part_of_data))
                 plotter_queue.put(part_of_data, msg_type = 2)
                 total -= size
 

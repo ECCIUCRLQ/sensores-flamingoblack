@@ -63,7 +63,7 @@ class interfazDistribuida:
 				which_node = key
 
 		if which_node == -1:
-			
+
 			print ("No hay espacio en ningun nodo")
 			return 0
 
@@ -78,7 +78,7 @@ class interfazDistribuida:
 			sock_node.connect((host_good_format, 3114))
 
 			while True:
-				
+
 				sock_node.sendall(package)
 				reply = sock_node.recv(1024)
 				node_size = manepack.desempacar_paquete_guardar_respuesta_ID_NM(reply, package[1])
@@ -129,6 +129,7 @@ class interfazDistribuida:
 					while True:
 
 						sock_node.sendall(package)
+						time.sleep(8)
 						reply_package = sock_node.recv(691204)	# tamaño de la página más grande, más op code (1 byte) y id page (1 byte), más dos por si algo
 						print (reply_package)
 
@@ -276,7 +277,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			doBreak = False
 
-			# broadcast dentro del lab 
+			# broadcast dentro del lab
 			interBroad.bind(("", self.disInter.my_broadcast_port))
 
 			while not self.kill:
@@ -307,7 +308,7 @@ class threadsDistributedInterface(threading.Thread):
 							try:
 								#print ("intento recibir")
 								paquete_respuesta, addr = interBroad.recvfrom(1024)
-							
+
 							except socket.error:
 
 								pass
@@ -332,7 +333,7 @@ class threadsDistributedInterface(threading.Thread):
 
 								self.disInter.active = True
 								break
-					
+
 
 						if paquete_respuesta:
 
@@ -370,7 +371,7 @@ class threadsDistributedInterface(threading.Thread):
 										break
 
 							elif paquete_respuesta[0] == 1:
-							
+
 								print ("Ya hay interfaz activa. Me declaro pasiva.")
 								datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
 								print (datos)
@@ -394,13 +395,13 @@ class threadsDistributedInterface(threading.Thread):
 									self.disInter.status = True
 									doBreak = True
 									break
-									
+
 								break
 
 						else:
 
 							break
-					
+
 					if doBreak:
 						break
 
@@ -514,11 +515,19 @@ class threadsDistributedInterface(threading.Thread):
 				espacio_nodo = manepack.desempacar_paquete_estoyAqui(paquete)
 
 				for key in self.disInter.node_manager:
-					
+
 					node_data = self.disInter.node_manager[key]
-					
+
 					if node_data[0] == ip_nodo[0]:
 						repetido = True
+
+				with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
+
+					sock_node.connect((addr[0], 3114))
+					answer = 2
+					answer = answer.to_bytes(1, 'big')
+					sock_node.sendall(answer)
+					sock_node.close()
 
 				if not repetido:
 
@@ -526,14 +535,6 @@ class threadsDistributedInterface(threading.Thread):
 					self.disInter.changedNodes.append(self.disInter.nodeCounter)
 					self.disInter.nodeCounter += 1
 					self.disInter.sendChanges = True
-
-					with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock_node:
-
-						sock_node.connect((addr[0], 3114))
-						answer = 2
-						answer = answer.to_bytes(1, 'big')
-						sock_node.sendall(answer)
-						sock_node.close()
 
 			nodeBroad.close()
 
@@ -543,28 +544,28 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('10.1.137.192', 2000))
-				
+				memoryListener.bind(('10.1.137.102', 2000))
+
 				memoryListener.listen()
 				conn, addr = memoryListener.accept()
 
 				while not self.kill:
 
-					#with conn:
-
+					#with conn
 					paquete = conn.recv(691208)
+					print(len(paquete))
 
 					if(paquete[0] == 0):
 
 						saved = self.disInter.save_data(paquete)
 
 						if saved:
-						
+
 							page_size = struct.unpack("I", paquete[2:6])
 							print ("Se guardó página con ID: " + str(paquete[1]) + " y tamaño: " + str(page_size[0]))
 							answer_package = self.disInter.save_data_answer(paquete[1])
 							conn.sendall(answer_package)
-						
+
 						else:
 
 							answer_package = manepack.paquete_respuesta_guardar_ML_ID(4, paquete[1])
@@ -573,10 +574,12 @@ class threadsDistributedInterface(threading.Thread):
 					elif(paquete[0] == 1):
 
 						answer_package = self.disInter.recover_data(paquete)
+						print(len(answer_package))
 						conn.sendall(answer_package)
 
+
 				memoryListener.close()
-							
+
 
 		# Thread que maneja la interfaz pasiva, siempre va estar escuchando broadcast por parte del activo
 		# Si el paquete keep alive trae datos, actualiza las tablas de la interfaz
@@ -602,7 +605,7 @@ class threadsDistributedInterface(threading.Thread):
 
 						datos = manepack.desempacar_paquete_soyActivo(paquete)
 						self.disInter.update_with_dump(datos)
-					
+
 					elif paquete[0] == 2:
 
 						datos = manepack.desempacar_paquete_keepAlive(paquete)
