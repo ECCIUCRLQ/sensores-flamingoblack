@@ -117,13 +117,11 @@ class AdministradorMem:
 
         while(pagina_no_leida):
 
-            print(paquete_pagina)
-
             self.socketID.sendall(paquete_pagina)
 
             paquete_respuesta = bytearray()
 
-            time.sleep(8)
+            time.sleep(3)
 
             pack = self.socketID.recv(691208)
 
@@ -131,8 +129,6 @@ class AdministradorMem:
             paquete_respuesta += pack
 
             busDatos = manepack.desempacar_paquete_respuesta_leer(paquete_respuesta,numPagina,tamanoBytes)
-
-            print(len(busDatos))
 
             if(busDatos !=1):
                 pagina_no_leida = False
@@ -144,7 +140,6 @@ class AdministradorMem:
             longitud = 500
 
         for i in range(posicion,posicion+longitud):
-            print(i , " ")
             self.memoriaPrincipal[i] = busDatos[i-posicion]
 
         self.tablaPaginas[numPagina] = posicion
@@ -233,8 +228,6 @@ class AdministradorMem:
         elif tamano == 1:
             if offset == 495:
                 print("Esta por llenarse")
-                print(self.tablaPaginas)
-                print(numPagina)
                 self.enviarPagMemSecundaria(tamano,numPagina)
 
     """
@@ -324,7 +317,6 @@ class AdministradorMem:
             busDatos.append(fecha)
             busDatos.append(dato)
 
-        print (len(busDatos))
         return busDatos
 
     """

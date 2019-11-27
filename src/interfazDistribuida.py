@@ -131,7 +131,6 @@ class interfazDistribuida:
 						sock_node.sendall(package)
 						time.sleep(8)
 						reply_package = sock_node.recv(691204)	# tamaño de la página más grande, más op code (1 byte) y id page (1 byte), más dos por si algo
-						print (reply_package)
 
 						if reply_package[0] == 3:
 
@@ -374,10 +373,8 @@ class threadsDistributedInterface(threading.Thread):
 
 								print ("Ya hay interfaz activa. Me declaro pasiva.")
 								datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
-								print (datos)
 
 								self.disInter.update_with_dump(datos)
-								print (self.disInter.node_manager)
 								self.disInter.round = 3
 								self.disInter.status = True
 								doBreak = True
@@ -553,7 +550,6 @@ class threadsDistributedInterface(threading.Thread):
 
 					#with conn
 					paquete = conn.recv(691208)
-					print(len(paquete))
 
 					if(paquete[0] == 0):
 
@@ -574,7 +570,6 @@ class threadsDistributedInterface(threading.Thread):
 					elif(paquete[0] == 1):
 
 						answer_package = self.disInter.recover_data(paquete)
-						print(len(answer_package))
 						conn.sendall(answer_package)
 
 
