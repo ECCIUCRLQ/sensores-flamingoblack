@@ -282,21 +282,44 @@ class threadsDistributedInterface(threading.Thread):
 
 				else:
 
-					paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
-					interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
-					print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
+					if not self.disInter.status:
 
-					paquete_respuesta = []
+						paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
+						interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+						print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
 
-					while not paquete_respuesta:
+						paquete_respuesta = []
 
-						try:
+						while not paquete_respuesta:
 
-							paquete_respuesta, addr = interBroad.recvfrom(1024)
-						
-						except socket.error:
+							try:
 
-							pass
+								paquete_respuesta, addr = interBroad.recvfrom(1024)
+							
+							except socket.error:
+
+								pass
+
+							if paquete_respuesta:
+
+								if paquete_respuesta[0] == 0:
+
+									datos = manepack.desempacar_paquete_quieroSer(paquete_respuesta)
+
+									if datos[0] == self.disInter.raw_mac_address:
+
+										paquete_respuesta = []
+
+							if self.disInter.timeout_event.is_set():
+
+								# Me apropio de la IP global para la interfaz
+
+								#os.system('ifconfig eth0 down')
+								#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+								#os.system('ifconfig eth0 up')
+
+								self.disInter.active = True
+								break
 
 						if paquete_respuesta:
 
@@ -304,76 +327,59 @@ class threadsDistributedInterface(threading.Thread):
 
 								datos = manepack.desempacar_paquete_quieroSer(paquete_respuesta)
 
-								if datos[0] == self.disInter.raw_mac_address:
+								# esta condicion debe ser diferente de, si está ogual a, entonces es para prueba
+								if datos[0] != self.disInter.raw_mac_address:
 
-									paquete_respuesta = []
+									print ("Compito contra una interfaz con MAC: " + str(datos[0]))
+									print ("Compito contra una interfaz con ronda: " + str(datos[1]))
 
-						if self.disInter.timeout_event.is_set():
+									if datos[1] == self.disInter.round:
 
-							# Me apropio de la IP global para la interfaz
+										if datos[0] < self.disInter.raw_mac_address:
 
-							#os.system('ifconfig eth0 down')
-							#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-							#os.system('ifconfig eth0 up')
+											self.disInter.round += 1
 
-							self.disInter.active = True
-							break
+										else:
 
-					if paquete_respuesta:
+											self.disInter.round = 3
+											self.disInter.status = True
+											print ("He perdido la champions, me delcaro interfaz pasiva")
+											break
 
-						if paquete_respuesta[0] == 0:
-
-							datos = manepack.desempacar_paquete_quieroSer(paquete_respuesta)
-
-							# esta condicion debe ser diferente de, si está ogual a, entonces es para prueba
-							if datos[0] != self.disInter.raw_mac_address:
-
-								print ("Compito contra una interfaz con MAC: " + str(datos[0]))
-								print ("Compito contra una interfaz con ronda: " + str(datos[1]))
-
-								if datos[1] == self.disInter.round:
-
-									if datos[0] < self.disInter.raw_mac_address:
-
-										self.disInter.round += 1
-
-									else:
+									elif datos[1] > self.disInter.round:
 
 										self.disInter.round = 3
-										print ("He perdido la champions, me delcaro interfaz pasiva")
+										self.disInter.status = True
+										print ("Estoy atrasado en la champions, así que me declaro activo")
 										break
 
-								elif datos[1] > self.disInter.round:
-
-									self.disInter.round = 3
-									print ("Estoy atrasado en la champions, así que me declaro activo")
-									break
-
-						elif paquete_respuesta[0] == 1:
-						
-							print ("Ya hay interfaz activa. Me declaro pasiva.")
-							datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
-
-							self.disInter.update_with_dump(datos)
-							self.disInter.round = 3
-							break
-
-						elif paquete_respuesta[0] == 2:
-
-							print ("Ya hay interfaz activa. Me declaro pasiva.")
-							datos = manepack.desempacar_paquete_keepAlive(paquete_respuesta)
-
-							if datos > 1:
+							elif paquete_respuesta[0] == 1:
+							
+								print ("Ya hay interfaz activa. Me declaro pasiva.")
+								datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
 
 								self.disInter.update_with_dump(datos)
 								self.disInter.round = 3
+								self.disInter.status = True
 								break
-								
+
+							elif paquete_respuesta[0] == 2:
+
+								print ("Ya hay interfaz activa. Me declaro pasiva.")
+								datos = manepack.desempacar_paquete_keepAlive(paquete_respuesta)
+
+								if datos > 1:
+
+									self.disInter.update_with_dump(datos)
+									self.disInter.round = 3
+									self.disInter.status = True
+									break
+									
+								break
+
+						else:
+
 							break
-
-					else:
-
-						break
 
 				#time.sleep(4)
 
@@ -386,7 +392,7 @@ class threadsDistributedInterface(threading.Thread):
 
 		elif(my_name == "timeout"):
 
-			time.sleep(10)
+			time.sleep(4)
 			self.disInter.timeout_event.set()
 
 		# Thread activo, este thread inicialmente cuando se activa manda el mensaje soy activo y hace un dump de sus tablas
@@ -514,7 +520,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('192.168.50.51', 2000))
+				memoryListener.bind(('10.1.137.192', 2000))
 				
 				while not self.kill:
 				
