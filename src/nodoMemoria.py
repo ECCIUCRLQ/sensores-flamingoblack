@@ -107,7 +107,7 @@ class NodoMemoria():
     Retorna:
         el byteArray con los datos de la pagina
     """
-    def leer_pagina(self, id_pagina): 
+    def leer_pagina(self, id_pagina):
         offsetMeta = self.leerUnDato(0,0)
         bytesTemp2 = bytearray(8)
         tamanoPagina = 0
@@ -147,37 +147,55 @@ class threadsInterface(threading.Thread):
         self.registration = False
         self.puerto_broad_ID = 5000
         self.puerto_tcp_ID = 3114
-        self.hostID = "127.0.0.1"
+        self.hostID = "192.168.0.10"
         self.name = name
         self.kill = False
         self.nodoMem = nodoMemoria
         self.tamanoRestante = self.nodoMem.node_size
-
-    def threads_alive(self, Threads):
-        for thread in Threads:
-            if not thread.is_alive():
-                return False
-        return True
 
     def run(self):
 
         my_name = self.name
         if(my_name == "registracionBroad"):
 
-            while(registration == False):
+            while(self.registration == False):
                 paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(5, self.nodoMem.node_size)
-                nodoBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                nodoBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-                nodoBroad.bind(("", self.puerto_broad_ID))
-                nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID))
+                nodoBroad.setblocking(0)
 
-            self.kill = True
+
+                paquete_respuesta = []
+
+                while not paquete_respuesta:
+
+                    nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID))
+                    print("Soy un nodo! Donde estan?")
+
+
+                    try:
+
+                        paquete_respuesta , addr = nodoBroad.recvfrom(1024)
+                        print(addr)
+
+                        if(addr[0] == self.hostID):
+                            paquete_respuesta = []
+                        else:
+                            break
+
+                    except socket.error:
+
+                        print("Error")
+                        break
+
+                    time.sleep(2)
 
         elif(my_name == "interfazListener"):
             #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as interListener:
 
             interListener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            #interListener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
             interListener.bind((self.hostID, self.puerto_tcp_ID))
 
@@ -191,38 +209,46 @@ class threadsInterface(threading.Thread):
 
 
                     if(data[0] == 0):
-                        {
-                            id_page, page_size, data = manepack.desempacar_paquete_guardar(data)
-                            self.nodoMem.guardar_pagina(page_size, id_page, data)
-                            self.tamanoRestante = self.tamanoRestante - page_size - 17
-                            paquete = manepack.paquete_respuesta_guardar_ID_NM(2, id_page, tamanoRestante)
-                            conn.sendall(paquete)
-                        }
+                        id_page, page_size, data = manepack.desempacar_paquete_guardar(data)
+                        self.nodoMem.guardar_pagina(page_size, id_page, data)
+                        self.tamanoRestante = self.tamanoRestante - page_size - 17
+                        paquete = manepack.paquete_respuesta_guardar_ID_NM(2, id_page, tamanoRestante)
+                        conn.sendall(paquete)
 
                     elif(data[0] == 1):
-                        {
-                            id_pagina = manepack.desempacar_paquete_guardar(data)
-                            pagina = self.nodoMem.leer_pagina(self, id_pagina)
-                            paquete = self.nodoMem.paquete_respuesta_leer(3, id_pagina, pagina)
-                            conn.sendall(paquete)
-                        }
+                        id_pagina = manepack.desempacar_paquete_guardar(data)
+                        pagina = self.nodoMem.leer_pagina(self, id_pagina)
+                        paquete = self.nodoMem.paquete_respuesta_leer(3, id_pagina, pagina)
+                        conn.sendall(paquete)
 
                     elif(data[0] == 2):
-                        {
-                                print("Se registro exitosamente.")
-                                self.registration = True
-                        }
+                        print("Se registro exitosamente.")
+                        self.registration = True
 
         elif(my_name == "tecladoListener"):
 
             print("Si desea ver el contenido actual del nodo de memoria presione la tecla N")
             while not self.kill:
-                if keyboard.is_pressed('n'):
-                    listaMetadatos = self.nodoMem.leer_metadatos_paginas_guardadas()
-                    print("ID Pagina\tTamano\tFecha Ultima Consulta\tFecha Creacion")
-                    for i in listaMetadatos:
-                        print("%d\t%d\t%s\t%s" %(i[0],i[1],time.ctime(i[2]),time.ctime(i[3])))
+                try:
+                    if keyboard.is_pressed('n'):
+                        print(" Mostrando contenido...")
+                        time.sleep(0.5)
                         print()
+                        listaMetadatos = self.nodoMem.leer_metadatos_paginas_guardadas()
+                        print("ID Pagina\t\tTamano\t\tFecha Consulta\t\tFecha Creacion")
+                        for i in listaMetadatos:
+                            print("%d\t%d\t%s\t%s" %(i[0],i[1],time.ctime(i[2]),time.ctime(i[3])))
+                            print()
+                        print()
+                except:
+                    print("Ocurrio un error al imprimir los datos")
+
+
+def threads_alive(Threads):
+    for thread in Threads:
+        if not thread.is_alive():
+            return False
+    return True
 
 
 def main():
@@ -245,7 +271,7 @@ def main():
     threads.append(threadinterfaz)
     threads.append(threadteclado)
 
-    while threadsInterface.threads_alive(threads):
+    while threads_alive(threads):
 
         try:
 
@@ -263,17 +289,3 @@ def main():
 
 
 main()
-
-# memoria[50008]
-
-# 22 500 6
-
-# memoria[0-3] = offset = 8 => 8+12
-# memoria[4-7] = offset2 = 50 007
-#memoria[8-11] = 22
-#memoria[12-15] = 500
-#memoria[16-19] = 6
-
-#memoria[50007-4] = fecha1
-#memoria[50007 -8] = fecha2
-# memoria[50007-8-500] = datos = reemplasa el offset2
