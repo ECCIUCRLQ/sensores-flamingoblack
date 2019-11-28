@@ -64,7 +64,34 @@ class NodoMemoria():
 
         return datoReal1[0], datoReal1[1], datoReal2[0], datoReal2[1]
 
-    # def guardar_pagina(self, tamano, id_pagina, datos):
+    def guardar_pagina(self, tamano, id_pagina, datos):
+        posicionMetadatos = self.leerUnDato(0,0)
+        posicionDatos = self.leerUnDato(4,0)
+
+        metadatos = struct.pack("=Bii", id_pagina, tamano, posicionDatos)
+
+        #Escribir la entrada de la pagina en metadatos
+        for i in range(posicionMetadatos, posicionMetadatos+9):
+            self.memoria[i] = metadatos[i-posicionMetadatos]
+
+        fecha = time.time()
+
+        encabezadoPag = struct.pack("=ff", fecha, fecha)
+
+        #Escribir el encabezado de una pagina en datos(fechaConsulta/fechaCreacion)
+        contador = 0
+        for i in range(posicionDatos-7, posicionDatos+1):
+            self.memoria[i] = encabezadoPag[contador]
+            contador+= 1
+
+        #Escribir los datos de una pagina
+        contador = 0
+        for i in range((posicionDatos-7)-tamano, posicionDatos-7):
+            self.memoria[i] = datos[contador]
+            contador += 1
+
+        print("Pagina de tamano " , tamano ," guardada exitosamente")
+
 
     def leer_pagina(self, id_pagina): #No terminado
         bytesTemp = bytearray(4)
@@ -75,7 +102,7 @@ class NodoMemoria():
         for i in range(4):
             bytesTemp[i] = self.memoria[i]
         offsetMeta = struct.unpack('I', bytesTemp)
- 
+
         for j in range(8, offsetMeta, 12):
             for k in range(4):
                 bytesTemp[k] = self.memoria[j+k]
@@ -122,8 +149,7 @@ class threadsInterface(threading.Thread):
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 nodoBroad.bind(("", self.puerto_broad_ID))
-                nodoBroad.sendto(
-                    paquete, ('<broadcast>', self.puerto_broad_ID))
+                nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID))
 
             self.kill = True
 
@@ -131,7 +157,7 @@ class threadsInterface(threading.Thread):
             #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as interListener:
 
             interListener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-             
+
             interListener.bind((self.hostID, self.puerto_tcp_ID))
 
             while not self.kill:
