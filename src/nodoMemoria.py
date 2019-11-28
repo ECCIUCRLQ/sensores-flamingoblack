@@ -208,8 +208,11 @@ class threadsInterface(threading.Thread):
             print("Si desea ver el contenido actual del nodo de memoria presione la tecla N")
             while not self.kill:
                 if keyboard.is_pressed('n'):
-                    listaMetadatosPorPagina = nodoMem.leer_metadatos_paginas_guardadas()
+                    listaMetadatos = nodoMem.leer_metadatos_paginas_guardadas()
                     print("ID Pagina\tTamano\tFecha Ultima Consulta\tFecha Creacion")
+                    for i in listaMetadatos:
+                        print("%d\t%d\t%s\t%s" %(i[0],i[1],time.ctime(i[2]),time.ctime(i[3])))
+                        print()
 
 
 def main():
