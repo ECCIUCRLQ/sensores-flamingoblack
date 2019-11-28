@@ -130,6 +130,27 @@ def paquete_broadcast_estoyAqui_NM_ID(op_code, node_size):
     return package
 
 # ------------------------
+# Método para NM cuando recibe un request de guardar
+# Retorna id_page, page_size, datos
+# ------------------------
+
+def desempacar_paquete_guardar(paquete):
+
+    op_code_res = paquete[0]
+    id_page = paquete[1]
+    page_size = struct.unpack("I", paquete[2:6])
+
+    if op_code_res == 4:
+
+        print ("Se produjo error al obtener el paquete")
+        return 1
+
+    else:
+
+        data = paquete[6:(6+page_size[0])]
+        return id_page, page_size[0], data
+
+# ------------------------
 # Método para ML cuando recibe la respuesta al request de guardar que realizó
 # Retorna 0 cuando se guarda exitosamente, 1 cuando hubo problema
 # ------------------------

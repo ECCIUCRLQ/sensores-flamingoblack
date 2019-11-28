@@ -6,6 +6,7 @@ import struct
 import uuid
 import threading
 import select
+import random
 import manejadorPaquetes as manepack
 
 class interfazDistribuida:
@@ -31,8 +32,9 @@ class interfazDistribuida:
 		self.gloabal_ip = "127.0.0.1"
 		self.my_broadcast_port = 6666
 		self.my_tcp_port = 3114
-		self.mac_addres_in_bytes = uuid.getnode().to_bytes(6, 'little')
-		self.raw_mac_address = uuid.getnode()
+		self.aver = random.randint(1,30)
+		self.mac_addres_in_bytes = (uuid.getnode()+self.aver).to_bytes(6, 'little')
+		self.raw_mac_address = uuid.getnode() + self.aver
 		self.round = 0
 		self.nodeCounter = 0
 		self.pageCounter = 0
@@ -240,6 +242,9 @@ class interfazDistribuida:
 			node_iterator += 9
 			node_amount -= 1
 
+		self.nodeCounter = 0
+		self.pageCounter = 0
+
 		for key in self.node_manager:
 
 			self.nodeCounter += 1
@@ -373,6 +378,7 @@ class threadsDistributedInterface(threading.Thread):
 
 								print ("Ya hay interfaz activa. Me declaro pasiva.")
 								datos = manepack.desempacar_paquete_soyActivo(paquete_respuesta)
+								print ("Dump recibido: " + str(datos))
 
 								self.disInter.update_with_dump(datos)
 								self.disInter.round = 3
@@ -387,6 +393,7 @@ class threadsDistributedInterface(threading.Thread):
 
 								if datos != 0:
 
+									print ("Dump recibido: " + str(datos))
 									self.disInter.update_with_dump(datos)
 									self.disInter.round = 3
 									self.disInter.status = True
@@ -541,7 +548,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('10.1.137.102', 2000))
+				memoryListener.bind(('192.168.50.51', 2000))
 
 				memoryListener.listen()
 				conn, addr = memoryListener.accept()
