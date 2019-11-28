@@ -49,20 +49,26 @@ class NodoMemoria():
         -posicion: posicion de esta pagina en la memoria.
     """
 
-    def leerMetadatos(self, id_pagina, posicion):
-        datoBytes1 = bytearray(8)
-        datoBytes2 = bytearray(8)
-        for k in range(posicion, posicion+8):
-            datoBytes1[k] = self.memoria[posicion+k]
+    def leerMetadatos(self, posicion):
 
-        datoReal1 = struct.unpack('II', datoBytes1)
+        metadatos = []
 
-        for f in range(datoReal1[1], datoReal1[0]+8):
-            datoBytes2[f] = self.memoria[datoReal1[1]+datoReal1[0]+f]
+        metadatos.append(self.memoria[posicion]) #Byte de ID de pagina
 
-        datoReal2 = struct.unpack('ii', datoBytes2)
+        tamano_posicion = struct.unpack("=II", self.memoria[posicion+1])
 
-        return datoReal1[0], datoReal1[1], datoReal2[0], datoReal2[1]
+        metadatos.append(tamano_posicion[0])   #Entero de tamano de pagina
+        #En [0] por que unpack desempaca com tupla
+
+        posicionDatos = tamano_posicion[1]
+
+        fechaCons_fechaCrea = struct.unpack("=ff", self.memoria[posicionDatos-7])
+
+        metadatos.append(fechaCons_fechaCrea[0]) #Float de Fecha consulta
+
+        metadatos.append(fechaCons_fechaCrea[1]) #Float de Fecha creacion
+
+        return metadatos
 
     def guardar_pagina(self, tamano, id_pagina, datos):
         posicionMetadatos = self.leerUnDato(0,0)
@@ -122,9 +128,14 @@ class NodoMemoria():
 
         return data
 
-    def leer_metadatos_paginas_guardadas(self):
-        lista = "hola"
-        return lista
+    def leer_metadatos_paginas_guardadas():
+        posicionMetadatos = self.leerUnDato(0,0)
+        listaMetadatos = []
+        for i in range(8, posicionMetadatos, 9):
+            metadatos = leerMetadatos(i)
+            listaMetadatos.append(metadatos)
+
+      return listaMetadatos
 
     def threads_alive(self, Threads):
         for thread in Threads:
@@ -194,11 +205,11 @@ class threadsInterface(threading.Thread):
 
         elif(my_name == "tecladoListener"):
 
+            print("Si desea ver el contenido actual del nodo de memoria presione la tecla N")
             while not self.kill:
                 if keyboard.is_pressed('n'):
-                    listaMetadatosPorPagina = self.nodoMem.leer_metadatos_paginas_guardadas()
-                    print(listaMetadatosPorPagina)
-                    break
+                    listaMetadatosPorPagina = nodoMem.leer_metadatos_paginas_guardadas()
+                    print("ID Pagina\tTamano\tFecha Ultima Consulta\tFecha Creacion")
 
 
 def main():
