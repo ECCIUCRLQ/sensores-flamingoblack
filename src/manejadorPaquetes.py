@@ -150,6 +150,18 @@ def desempacar_paquete_guardar(paquete):
         data = paquete[6:(6+page_size[0])]
         return id_page, page_size[0], data
 
+def desempacar_paquete_guardar(paquete):
+
+    op_code_res = paquete[0]
+    id_page = paquete[1]
+
+    if op_code_res == 4:
+        print ("Se produjo error al obtener el paquete")
+        return 1
+
+    else:
+        return id_page
+
 # ------------------------
 # Método para ML cuando recibe la respuesta al request de guardar que realizó
 # Retorna 0 cuando se guarda exitosamente, 1 cuando hubo problema
