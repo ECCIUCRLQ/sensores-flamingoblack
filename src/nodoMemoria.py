@@ -62,7 +62,7 @@ class NodoMemoria():
         return datoReal1[0], datoReal1[1], datoReal2[0], datoReal2[1]
 
 
-    def guardar_pagina(self, tamano, id_pagina, datos):
+    #def guardar_pagina(self, tamano, id_pagina, datos):
 
 
     def leer_pagina(self, id_pagina):
@@ -70,18 +70,18 @@ class NodoMemoria():
         tamanoPagina = 0
         posicionPagina = 0
         offsetMeta = 0
-        for i in range (0, 4)
+        for i in range (0, 4):
             bytesTemp[i] = self.memoria[i]
         offsetMeta = struct.unpack('I', offsetMetaBytes)
 
-        for j in range(8, offsetMeta, j+12):
-            for k in range(j,j+4):
+       # for j in range(8, offsetMeta, j+12):
+        #    for k in range(j,j+4):
 
 
 
-    def leer_metadatos_paginas_guardadas():
-      lista = "hola"
-      return lista
+    def leer_metadatos_paginas_guardadas(self):
+        lista = "hola"
+        return lista
     
 class threadsInterface(threading.Thread):
 
@@ -98,7 +98,7 @@ class threadsInterface(threading.Thread):
     def run(self):
 
         my_name = self.name
-        if(my_name == "registracionBroad")
+        if(my_name == "registracionBroad"):
 
             while(self.registration == false):
                 paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(5, self.node_size) 
@@ -136,17 +136,18 @@ class threadsInterface(threading.Thread):
 
                         elif(data[0]== 2):
                             {
-                                print("Se registro exitosamente.")
-                                registration = True
+                                #print("Se registro exitosamente.")
+                                #registration = True
                             }
 
 
-        elif(my_name = "tecladoListener"):
+        elif(my_name == "tecladoListener"):
 
             while not self.kill:
               if keyboard.is_pressed('n'):
-                listaMetadatosPorPagina = nodoMem.leer_metadatos_paginas_guardadas()
+                listaMetadatosPorPagina = self.nodoMem.leer_metadatos_paginas_guardadas()
                 print(listaMetadatosPorPagina)
+                break
                 
 
 
@@ -155,10 +156,11 @@ class threadsInterface(threading.Thread):
 def main():
 
     threads = []
+    memoryNode = NodoMemoria()
 
-    threadregister = threadsInterface(name = "registracionBroad")
-    threadinterfaz = threadsInterface(name = "interfazListener")
-    threadteclado = threadsInterface(name = "tecladoListener")
+    threadregister = threadsInterface(name = "registracionBroad", nodoMemoria =  memoryNode)
+    threadinterfaz = threadsInterface(name = "interfazListener", nodoMemoria = memoryNode)
+    threadteclado = threadsInterface(name = "tecladoListener", nodoMemoria = memoryNode)
 
     threadregister.start()
     threadinterfaz.start()
@@ -179,10 +181,9 @@ def main():
 
             print ("Killing threads\n")
             for thread in threads:
-                if(thread.kill = False):
-				    thread.kill = True
-
-			break
+                if(thread.kill == False):
+                    thread.kill = True
+            break
     print ("Main thread exited")
 
 main()
