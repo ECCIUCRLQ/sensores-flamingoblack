@@ -66,17 +66,26 @@ class NodoMemoria():
 
     # def guardar_pagina(self, tamano, id_pagina, datos):
 
-    def leer_pagina(self, id_pagina):
+    def leer_pagina(self, id_pagina): #No terminado
         bytesTemp = bytearray(4)
+        bytesTemp2 = bytearray(8)
         tamanoPagina = 0
         posicionPagina = 0
         offsetMeta = 0
-        for i in range(0, 4):
+        for i in range(4):
             bytesTemp[i] = self.memoria[i]
-        offsetMeta = struct.unpack('I', offsetMetaBytes)
-
-       # for j in range(8, offsetMeta, j+12):
-        #    for k in range(j,j+4):
+        offsetMeta = struct.unpack('I', bytesTemp)
+ 
+        for j in range(8, offsetMeta, 12):
+            for k in range(4):
+                bytesTemp[k] = self.memoria[j+k]
+                id_temp = struct.unpack('I', bytesTemp)
+                if id_temp == id_pagina:
+                    for n in range (8):
+                        bytesTemp2[n] = self.memoria[j+k+n]
+                        metaTemp = struct.unpack('II', bytesTemp)
+                        tamanoPagina = metaTemp[0]
+                        posicionPagina = metaTemp[1]
 
     def leer_metadatos_paginas_guardadas(self):
         lista = "hola"
