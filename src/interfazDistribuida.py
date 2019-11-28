@@ -288,9 +288,10 @@ class threadsDistributedInterface(threading.Thread):
 
 					# Me apropio de la IP global para la interfaz
 
-					#os.system('ifconfig eth0 down')
-					#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-					#os.system('ifconfig eth0 up')
+					print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
+					os.system('ifconfig eth0 down')
+					os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+					os.system('ifconfig eth0 up')
 
 					self.disInter.active = True
 					break
@@ -329,9 +330,10 @@ class threadsDistributedInterface(threading.Thread):
 
 								# Me apropio de la IP global para la interfaz
 
-								#os.system('ifconfig eth0 down')
-								#os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-								#os.system('ifconfig eth0 up')
+								print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
+								os.system('ifconfig eth0 down')
+								os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+								os.system('ifconfig eth0 up')
 
 								self.disInter.active = True
 								break
