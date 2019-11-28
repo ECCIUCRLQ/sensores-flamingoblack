@@ -10,14 +10,26 @@ import socket
 
 lock = threading.Lock()
 first_time = True
-
-
+register = False
 
 class NodoMemoria():
 
     def __init__(self):
-        self.memoria = bytearray(50008)
-        self.node_size = 50000
+        self.tamMax = 50008
+        self.memoria = bytearray(self.tamMax)
+        self.node_size = self.tamMax-8
+
+
+        self.memoria[0] = 0x08
+        for i in range(1,4):
+            self.memoria[i] = 0x00
+
+
+        tamMaxBytes = (self.tamMax-1).to_bytes(4,'little')
+
+        for i in range(4,8):
+            self.memoria[i] = tamMaxBytes[i-4]
+
 
     """
     Funcion que lee un dato especifico de la memoria.
@@ -31,8 +43,10 @@ class NodoMemoria():
 
     def leerUnDato(self, posicion, formato):
         datoBytes = bytearray(4)
+        contador = 0
         for k in range(posicion, posicion+4):
-            datoBytes[k] = self.memoria[posicion+k]
+            datoBytes[contador] = self.memoria[posicion+k]
+            contador+=1
 
         datoReal = 0
         if(formato == 0):
@@ -73,12 +87,15 @@ class NodoMemoria():
     def guardar_pagina(self, tamano, id_pagina, datos):
         posicionMetadatos = self.leerUnDato(0,0)
         posicionDatos = self.leerUnDato(4,0)
+        print(posicionDatos)
 
         metadatos = struct.pack("=Bii", id_pagina, tamano, posicionDatos)
 
         #Escribir la entrada de la pagina en metadatos
+        contador = 0
         for i in range(posicionMetadatos, posicionMetadatos+9):
-            self.memoria[i] = metadatos[i-posicionMetadatos]
+            self.memoria[i] = metadatos[contador]
+            contador+=1
 
         fecha = time.time()
 
@@ -87,14 +104,29 @@ class NodoMemoria():
         #Escribir el encabezado de una pagina en datos(fechaConsulta/fechaCreacion)
         contador = 0
         for i in range(posicionDatos-7, posicionDatos+1):
+            print(i)
             self.memoria[i] = encabezadoPag[contador]
             contador+= 1
 
         #Escribir los datos de una pagina
         contador = 0
         for i in range((posicionDatos-7)-tamano, posicionDatos-7):
+            print(i)
             self.memoria[i] = datos[contador]
             contador += 1
+
+
+        posicionMetadatos += 9
+        posMetBytes = posicionMetadatos.to_bytes(4,'little')
+
+        for i in range (0,4):
+            self.memoria[i] = posMetBytes[i]
+
+        posicionDatos -= (8+tamano)
+        posDataBytes = posicionDatos.to_bytes(4,'little')
+
+        for i in range (4,8):
+            self.memoria[i] = posDataBytes[i-4]
 
         print("Pagina de tamano " , tamano ," guardada exitosamente")
 
@@ -116,20 +148,20 @@ class NodoMemoria():
         for j in range(8, offsetMeta, 9):
             if self.memoria[j] == id_pagina:
                 for n in range (8):
-		    bytesTemp2[n] = self.memoria[j+1+n]
-		    metaTemp = struct.unpack('II', bytesTemp)
-		    tamanoPagina = metaTemp[0]
-		    posicionPagina = metaTemp[1]
+                    bytesTemp2[n] = self.memoria[j+1+n]
+            metaTemp = struct.unpack('II', bytesTemp)
+            tamanoPagina = metaTemp[0]
+            posicionPagina = metaTemp[1]
 
-                break
+            break
         data = bytearray(tamanoPagina)
         for d in range(tamanoPagina):
             data[d] = self.memoria[offsetMeta-8-tamanoPagina+d]
-	now = time.time()
-	fecha = struct.pack("=f", now)
-	for m in range(4):
-		memoria[(offsetMeta-8)+m]=fecha[m]
-	
+        now = time.time()
+        fecha = struct.pack("=f", now)
+        for m in range(4):
+            memoria[(offsetMeta-7)+m]=fecha[m]
+
 
         return data
 
@@ -149,52 +181,37 @@ class threadsInterface(threading.Thread):
     def __init__(self, name, nodoMemoria):
 
         threading.Thread.__init__(self)
-        self.registration = False
-        self.puerto_broad_ID = 5000
+
+        self.puerto_broad_ID = 4444
         self.puerto_tcp_ID = 3114
-        self.hostID = "192.168.0.10"
+        self.hostID = "10.1.137.102"
         self.name = name
         self.kill = False
         self.nodoMem = nodoMemoria
         self.tamanoRestante = self.nodoMem.node_size
+        #register = registration
 
     def run(self):
-
+        global register
         my_name = self.name
         if(my_name == "registracionBroad"):
+            paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(5, self.nodoMem.node_size)
+            nodoBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            nodoBroad.setblocking(0)
 
-            while(self.registration == False):
-                paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(5, self.nodoMem.node_size)
-                nodoBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-                nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-                nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-                nodoBroad.setblocking(0)
+            nodoBroad.bind(('',self.puerto_broad_ID))
+
+            while not register:
+
+                nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID)) #intentar '10.1.255.255'
+                print("Soy un nodo! Donde estan?")
+
+                time.sleep(1)
 
 
-                paquete_respuesta = []
 
-                while not paquete_respuesta:
-
-                    nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID)) #intentar '10.1.255.255'
-                    print("Soy un nodo! Donde estan?")
-
-
-                    try:
-
-                        paquete_respuesta , addr = nodoBroad.recvfrom(1024)
-                        print(addr)
-
-                        if(addr[0] == self.hostID):
-                            paquete_respuesta = []
-                        else:
-                            break
-
-                    except socket.error:
-
-                        print("Error")
-                        break
-
-                    time.sleep(2)
 
         elif(my_name == "interfazListener"):
             #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as interListener:
@@ -217,7 +234,8 @@ class threadsInterface(threading.Thread):
                         id_page, page_size, data = manepack.desempacar_paquete_guardar(data)
                         self.nodoMem.guardar_pagina(page_size, id_page, data)
                         self.tamanoRestante = self.tamanoRestante - page_size - 17
-                        paquete = manepack.paquete_respuesta_guardar_ID_NM(2, id_page, tamanoRestante)
+                        paquete = manepack.paquete_respuesta_guardar_ID_NM(2, id_page, self.tamanoRestante)
+                        print(paquete)
                         conn.sendall(paquete)
 
                     elif(data[0] == 1):
@@ -228,7 +246,7 @@ class threadsInterface(threading.Thread):
 
                     elif(data[0] == 2):
                         print("Se registro exitosamente.")
-                        self.registration = True
+                        register = True
 
         elif(my_name == "tecladoListener"):
 
@@ -260,6 +278,7 @@ def main():
 
     threads = []
     memoryNode = NodoMemoria()
+    register =  False
 
     threadregister = threadsInterface(
         name="registracionBroad", nodoMemoria=memoryNode)
@@ -281,7 +300,10 @@ def main():
         try:
 
             [thread.join(1) for thread in threads
-             if thread is not None and thread.is_alive()]
+            if thread is not None and thread.is_alive()]
+
+            if register:
+                threadregister.kill=True
 
         except KeyboardInterrupt:
 
@@ -290,7 +312,7 @@ def main():
                 if(thread.kill == False):
                     thread.kill = True
             break
-    print("Main thread exited")
+    #print("Main thread exited")
 
 
 main()
