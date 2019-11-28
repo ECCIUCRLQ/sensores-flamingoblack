@@ -5,6 +5,7 @@ import threading
 import struct
 import datetime
 import manejadorPaquetes as manepack
+import keyboard
 
 lock = threading.Lock()
 first_time = True
@@ -51,12 +52,12 @@ class NodoMemoria():
         for k in range (posicion, posicion+8):
             datoBytes1[k] = self.memoria[posicion+k]
         
-        datoReal1 = struct.unpack('II', datoBytes)
+        datoReal1 = struct.unpack('II', datoBytes1)
 
         for f in range (datoReal1[1],datoReal1[0]+8):
-            datoBytes1[f] = self.memoria[datoReal1[1]+datoReal1[0]+f]
+            datoBytes2[f] = self.memoria[datoReal1[1]+datoReal1[0]+f]
         
-        datoReal2 = struct.unpack('ii', datoBytes)
+        datoReal2 = struct.unpack('ii', datoBytes2)
 
         return datoReal1[0], datoReal1[1], datoReal2[0], datoReal2[1]
 
@@ -79,7 +80,8 @@ class NodoMemoria():
 
 
     def leer_metadatos_paginas_guardadas():
-
+      lista = "hola"
+      return lista
     
 class threadsInterface(threading.Thread):
 
@@ -142,6 +144,10 @@ class threadsInterface(threading.Thread):
         elif(my_name = "tecladoListener"):
 
             while not self.kill:
+              if keyboard.is_pressed('n'):
+                listaMetadatosPorPagina = nodoMem.leer_metadatos_paginas_guardadas()
+                print(listaMetadatosPorPagina)
+                
 
 
 
@@ -180,3 +186,17 @@ def main():
     print ("Main thread exited")
 
 main()
+
+#memoria[50008]
+
+#22 500 6
+
+#memoria[0-3] = offset = 8 => 8+12
+#memoria[4-7] = offset2 = 50 007
+#memoria[8-11] = 22
+#memoria[12-15] = 500
+#memoria[16-19] = 6
+
+#memoria[50007-4] = fecha1
+#memoria[50007 -8] = fecha2
+#memoria[50007-8-500] = datos = reemplasa el offset2
