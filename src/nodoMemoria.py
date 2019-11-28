@@ -116,15 +116,18 @@ class NodoMemoria():
         for j in range(8, offsetMeta, 9):
             if self.memoria[j] == id_pagina:
                 for n in range (8):
-                    bytesTemp2[n] = self.memoria[j+1+n]
-                    metaTemp = struct.unpack('II', bytesTemp)
-                    tamanoPagina = metaTemp[0]
-                    posicionPagina = metaTemp[1]
+		    bytesTemp2[n] = self.memoria[j+1+n]
+		    metaTemp = struct.unpack('II', bytesTemp)
+		    tamanoPagina = metaTemp[0]
+		    posicionPagina = metaTemp[1]
 
                 break
         data = bytearray(tamanoPagina)
         for d in range(tamanoPagina):
             data[d] = self.memoria[offsetMeta-8-tamanoPagina+d]
+	for m in range(4):
+		memoria[(offsetMeta-8)+m]=bytesTemp2[m]
+	
 
         return data
 
@@ -170,7 +173,7 @@ class threadsInterface(threading.Thread):
 
                 while not paquete_respuesta:
 
-                    nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID))
+                    nodoBroad.sendto(paquete, ('<broadcast>', self.puerto_broad_ID)) #intentar '10.1.255.255'
                     print("Soy un nodo! Donde estan?")
 
 
