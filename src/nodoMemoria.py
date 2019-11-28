@@ -18,7 +18,7 @@ class NodoMemoria():
 
 
     """
-    Funcion que un dato especifico de la memoria.
+    Funcion que lee un dato especifico de la memoria.
     Parametros:
         -posicion:donde empezar a leer desde el inicion de la memoria.
         -tamanoDato: El tamano de la parte de la memoria que hay que leer.
@@ -26,9 +26,9 @@ class NodoMemoria():
             formato = 0: 'I'
             formato = 1: 'i'
     """
-    def leerUnDato(self,posicion,formato): #falta adoptar
+    def leerUnDato(self,posicion,formato): 
         datoBytes = bytearray(4)
-        for k in range (4):
+        for k in range (posicion, posicion+4):
             datoBytes[k] = self.memoria[posicion+k]
 
         datoReal = 0
@@ -39,25 +39,44 @@ class NodoMemoria():
 
         return datoReal[0]
 
-    def leerMetadatos(self,id_pagina, posicion1):
+    """
+    Funcion que lee los metadatos de una pagina guardada en la memoria.
+    Parametros:
+        -id_pagina:la pagina que se requiere leer los metadatos.
+        -posicion: posicion de esta pagina en la memoria.
+    """
+    def leerMetadatos(self,id_pagina, posicion):
         datoBytes1 = bytearray(8)
         datoBytes2 = bytearray(8)
-        for k in range (8):
-            datoBytes1[k] = self.memoria[posicion1+k]
+        for k in range (posicion, posicion+8):
+            datoBytes1[k] = self.memoria[posicion+k]
         
         datoReal1 = struct.unpack('II', datoBytes)
 
-        for f in range (8):
-            datoBytes1[h] = self.memoria[datoReal1[1]+datoReal1[0]+h]
+        for f in range (datoReal1[1],datoReal1[0]+8):
+            datoBytes1[f] = self.memoria[datoReal1[1]+datoReal1[0]+f]
         
         datoReal2 = struct.unpack('ii', datoBytes)
 
         return datoReal1[0], datoReal1[1], datoReal2[0], datoReal2[1]
 
 
-    def guardar_pagina():
+    def guardar_pagina(self, tamano, id_pagina, datos):
 
-    def leer_pagina():
+
+    def leer_pagina(self, id_pagina):
+        bytesTemp = bytearray(4)
+        tamanoPagina = 0
+        posicionPagina = 0
+        offsetMeta = 0
+        for i in range (0, 4)
+            bytesTemp[i] = self.memoria[i]
+        offsetMeta = struct.unpack('I', offsetMetaBytes)
+
+        for j in range(8, offsetMeta, j+12):
+            for k in range(j,j+4):
+
+
 
     def leer_metadatos_paginas_guardadas():
 
