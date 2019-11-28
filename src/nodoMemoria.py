@@ -6,6 +6,7 @@ import struct
 import datetime
 import manejadorPaquetes as manepack
 import keyboard
+import socket
 
 lock = threading.Lock()
 first_time = True
@@ -81,8 +82,8 @@ class NodoMemoria():
         lista = "hola"
         return lista
 
-    def threads_alive(self, pThreads):
-        for thread in pThreads:
+    def threads_alive(self, Threads):
+        for thread in Threads:
             if not thread.is_alive():
                 return False
         return True
@@ -105,46 +106,48 @@ class threadsInterface(threading.Thread):
         my_name = self.name
         if(my_name == "registracionBroad"):
 
-            while(self.registration == false):
+            while(registration == False):
                 paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(
-                    5, self.node_size)
+                    5, self.nodoMem.node_size)
                 nodoBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
                 nodoBroad.bind(("", self.puerto_broad_ID))
-                interBroad.sendto(
+                nodoBroad.sendto(
                     paquete, ('<broadcast>', self.puerto_broad_ID))
 
             self.kill = True
 
         elif(my_name == "interfazListener"):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as interListener:
+            #with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as interListener:
 
-                interListener.bind((hostID, puerto_tcp_ID))
+            interListener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+             
+            interListener.bind((self.hostID, self.puerto_tcp_ID))
 
-                while not self.kill:
-                    memoryListener.listen()
-                    conn, addr = memoryListener.accept()
+            while not self.kill:
+                interListener.listen()
+                conn, addr = interListener.accept()
 
-                    with conn:
+                with conn:
 
-                        data = conn.recv(691208)
+                    data = conn.recv(691208)
 
-                        if(data[0] == 0):
-                            {
+                    if(data[0] == 0):
+                        {
 
-                            }
+                        }
 
-                        elif(data[0] == 1):
-                            {
+                    elif(data[0] == 1):
+                        {
 
-                            }
+                        }
 
-                        elif(data[0] == 2):
-                            {
+                    elif(data[0] == 2):
+                        {
                                 #print("Se registro exitosamente.")
                                 #registration = True
-                            }
+                        }
 
         elif(my_name == "tecladoListener"):
 
