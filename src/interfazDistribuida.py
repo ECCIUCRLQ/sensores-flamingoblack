@@ -6,7 +6,6 @@ import struct
 import uuid
 import threading
 import select
-import random
 import manejadorPaquetes as manepack
 
 class interfazDistribuida:
@@ -32,9 +31,8 @@ class interfazDistribuida:
 		self.gloabal_ip = "127.0.0.1"
 		self.my_broadcast_port = 6666
 		self.my_tcp_port = 3114
-		self.aver = random.randint(1,30)
-		self.mac_addres_in_bytes = (uuid.getnode()+self.aver).to_bytes(6, 'little')
-		self.raw_mac_address = uuid.getnode() + self.aver
+		self.mac_addres_in_bytes = uuid.getnode().to_bytes(6, 'little')
+		self.raw_mac_address = uuid.getnode()
 		self.round = 0
 		self.nodeCounter = 0
 		self.pageCounter = 0
