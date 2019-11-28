@@ -10,7 +10,7 @@ import socket
 
 lock = threading.Lock()
 first_time = True
-registration = False
+
 
 
 class NodoMemoria():
@@ -107,7 +107,7 @@ class NodoMemoria():
     Retorna:
         el byteArray con los datos de la pagina
     """
-    def leer_pagina(self, id_pagina): #No terminado
+    def leer_pagina(self, id_pagina): 
         offsetMeta = self.leerUnDato(0,0)
         bytesTemp2 = bytearray(8)
         tamanoPagina = 0
@@ -128,20 +128,15 @@ class NodoMemoria():
 
         return data
 
-    def leer_metadatos_paginas_guardadas():
+    def leer_metadatos_paginas_guardadas(self):
         posicionMetadatos = self.leerUnDato(0,0)
         listaMetadatos = []
         for i in range(8, posicionMetadatos, 9):
             metadatos = leerMetadatos(i)
             listaMetadatos.append(metadatos)
 
-      return listaMetadatos
+        return listaMetadatos
 
-    def threads_alive(self, Threads):
-        for thread in Threads:
-            if not thread.is_alive():
-                return False
-        return True
 
 
 class threadsInterface(threading.Thread):
@@ -149,12 +144,20 @@ class threadsInterface(threading.Thread):
     def __init__(self, name, nodoMemoria):
 
         threading.Thread.__init__(self)
+        self.registration = False
         self.puerto_broad_ID = 5000
         self.puerto_tcp_ID = 3114
         self.hostID = "127.0.0.1"
         self.name = name
         self.kill = False
         self.nodoMem = nodoMemoria
+        self.tamanoRestante = self.nodoMem.node_size
+
+    def threads_alive(self, Threads):
+        for thread in Threads:
+            if not thread.is_alive():
+                return False
+        return True
 
     def run(self):
 
@@ -162,8 +165,7 @@ class threadsInterface(threading.Thread):
         if(my_name == "registracionBroad"):
 
             while(registration == False):
-                paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(
-                    5, self.nodoMem.node_size)
+                paquete = manepack.paquete_broadcast_estoyAqui_NM_ID(5, self.nodoMem.node_size)
                 nodoBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 nodoBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
@@ -187,20 +189,28 @@ class threadsInterface(threading.Thread):
 
                     data = conn.recv(691208)
 
+
                     if(data[0] == 0):
                         {
-
+                            id_page, page_size, data = manepack.desempacar_paquete_guardar(data)
+                            self.nodoMem.guardar_pagina(page_size, id_page, data)
+                            self.tamanoRestante = self.tamanoRestante - page_size - 17
+                            paquete = manepack.paquete_respuesta_guardar_ID_NM(2, id_page, tamanoRestante)
+                            conn.sendall(paquete)
                         }
 
                     elif(data[0] == 1):
                         {
-
+                            id_pagina = manepack.desempacar_paquete_guardar(data)
+                            pagina = self.nodoMem.leer_pagina(self, id_pagina)
+                            paquete = self.nodoMem.paquete_respuesta_leer(3, id_pagina, pagina)
+                            conn.sendall(paquete)
                         }
 
                     elif(data[0] == 2):
                         {
-                                #print("Se registro exitosamente.")
-                                #registration = True
+                                print("Se registro exitosamente.")
+                                self.registration = True
                         }
 
         elif(my_name == "tecladoListener"):
@@ -208,7 +218,7 @@ class threadsInterface(threading.Thread):
             print("Si desea ver el contenido actual del nodo de memoria presione la tecla N")
             while not self.kill:
                 if keyboard.is_pressed('n'):
-                    listaMetadatos = nodoMem.leer_metadatos_paginas_guardadas()
+                    listaMetadatos = self.nodoMem.leer_metadatos_paginas_guardadas()
                     print("ID Pagina\tTamano\tFecha Ultima Consulta\tFecha Creacion")
                     for i in listaMetadatos:
                         print("%d\t%d\t%s\t%s" %(i[0],i[1],time.ctime(i[2]),time.ctime(i[3])))
@@ -235,7 +245,7 @@ def main():
     threads.append(threadinterfaz)
     threads.append(threadteclado)
 
-    while memoryNode.threads_alive(threads):
+    while threadsInterface.threads_alive(threads):
 
         try:
 
