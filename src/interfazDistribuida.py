@@ -28,8 +28,8 @@ class interfazDistribuida:
 		self.active = False
 		self.status = False
 		self.startChampions = True
-		self.gloabal_ip = "127.0.0.1"
-		self.my_broadcast_port = 6666
+		self.gloabal_ip = "10.1.138.40"
+		self.my_broadcast_port = 5555
 		self.my_tcp_port = 3114
 		self.mac_addres_in_bytes = uuid.getnode().to_bytes(6, 'little')
 		self.raw_mac_address = uuid.getnode()
@@ -288,10 +288,11 @@ class threadsDistributedInterface(threading.Thread):
 
 					# Me apropio de la IP global para la interfaz
 
-					print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
-					os.system('ifconfig eth0 down')
-					os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-					os.system('ifconfig eth0 up')
+					#print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
+					#os.system('sudo ifconfig eth0 down')
+					#os.system('sudo ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+					#os.system('sudo ifconfig eth0 up')
+					#os.system('Flamingo2019')
 
 					self.disInter.active = True
 					break
@@ -330,10 +331,11 @@ class threadsDistributedInterface(threading.Thread):
 
 								# Me apropio de la IP global para la interfaz
 
-								print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
-								os.system('ifconfig eth0 down')
-								os.system('ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-								os.system('ifconfig eth0 up')
+								#print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
+								#os.system('sudo ifconfig eth0 down')
+								#os.system('sudo ifconfig eth0 ' + str(self.disInter.gloabal_ip))
+								#os.system('sudo ifconfig eth0 up')
+								#os.system('Flamingo2019')
 
 								self.disInter.active = True
 								break
@@ -505,7 +507,7 @@ class threadsDistributedInterface(threading.Thread):
 			nodeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-			nodeBroad.bind(("", 5000))
+			nodeBroad.bind(("", 6000))
 
 			while not self.kill:
 
@@ -548,7 +550,7 @@ class threadsDistributedInterface(threading.Thread):
 
 			with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as memoryListener:
 
-				memoryListener.bind(('192.168.50.51', 2000))
+				memoryListener.bind((self.disInter.gloabal_ip, 2000))
 
 				memoryListener.listen()
 				conn, addr = memoryListener.accept()
