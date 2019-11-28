@@ -125,8 +125,10 @@ class NodoMemoria():
         data = bytearray(tamanoPagina)
         for d in range(tamanoPagina):
             data[d] = self.memoria[offsetMeta-8-tamanoPagina+d]
+	now = time.time()
+	fecha = struct.pack("=f", now)
 	for m in range(4):
-		memoria[(offsetMeta-8)+m]=bytesTemp2[m]
+		memoria[(offsetMeta-8)+m]=fecha[m]
 	
 
         return data
