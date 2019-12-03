@@ -43,10 +43,9 @@ class NodoMemoria():
 
     def leerUnDato(self, posicion, formato):
         datoBytes = bytearray(4)
-        contador = 0
-        for k in range(posicion, posicion+4):
-            datoBytes[contador] = self.memoria[posicion+k]
-            contador+=1
+
+        for k in range(4):
+            datoBytes[k] = self.memoria[posicion+k]
 
         datoReal = 0
         if(formato == 0):
@@ -72,7 +71,7 @@ class NodoMemoria():
         tamano_posicion = struct.unpack("=II", self.memoria[posicion+1])
 
         metadatos.append(tamano_posicion[0])   #Entero de tamano de pagina
-        #En [0] por que unpack desempaca com tupla
+        #En [0] por que unpack desempaca como tupla
 
         posicionDatos = tamano_posicion[1]
 
@@ -156,13 +155,11 @@ class NodoMemoria():
             break
         data = bytearray(tamanoPagina)
         for d in range(tamanoPagina):
-            data[d] = self.memoria[offsetMeta-8-tamanoPagina+d]
+            data[d] = self.memoria[posicionPagina-8-tamanoPagina+d]
         now = time.time()
         fecha = struct.pack("=f", now)
         for m in range(4):
-            memoria[(offsetMeta-7)+m]=fecha[m]
-
-
+            memoria[(posicionPagina-7)+m]=fecha[m]
         return data
 
     def leer_metadatos_paginas_guardadas(self):
@@ -182,9 +179,9 @@ class threadsInterface(threading.Thread):
 
         threading.Thread.__init__(self)
 
-        self.puerto_broad_ID = 4444
+        self.puerto_broad_ID = 5555
         self.puerto_tcp_ID = 3114
-        self.hostID = "10.1.137.102"
+        self.hostID = "127.0.0.1"
         self.name = name
         self.kill = False
         self.nodoMem = nodoMemoria
