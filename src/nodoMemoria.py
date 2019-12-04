@@ -68,13 +68,23 @@ class NodoMemoria():
 
         metadatos.append(self.memoria[posicion]) #Byte de ID de pagina
 
-        tamano_posicion = struct.unpack("=II", self.memoria[posicion+1])
+        bytesCopiaTamPos = bytearray(8)
+        for i in range(8):
+            bytesCopiaTamPos[i] = self.memoria[posicion+1+i] 
+        
+        tamano_posicion = struct.unpack("=II", bytesCopiaTamPos)
 
         metadatos.append(tamano_posicion[0])   #Entero de tamano de pagina
         #En [0] por que unpack desempaca como tupla
-        posicionDatos = tamano_posicion[1]
+
+        posicionDatos = tamano_posicion[1] 
         metadatos.append(posicionDatos)
-        fechaCons_fechaCrea = struct.unpack("=ff", self.memoria[posicionDatos-7])
+
+        bytesCopiaFechas = bytearray(8)
+        for i in range(8):
+            bytesCopiaFechas[i] = self.memoria[posicionDatos-7+i]
+
+        fechaCons_fechaCrea = struct.unpack("=II", bytesCopiaFechas)
 
         metadatos.append(fechaCons_fechaCrea[0]) #Float de Fecha consulta
 
@@ -85,7 +95,7 @@ class NodoMemoria():
     def guardar_pagina(self, tamano, id_pagina, datos):
         posicionMetadatos = self.leerUnDato(0,0)
         posicionDatos = self.leerUnDato(4,0)
-        print(posicionDatos)
+        #print(posicionDatos)
 
         metadatos = struct.pack("=Bii", id_pagina, tamano, posicionDatos)
 
@@ -95,14 +105,13 @@ class NodoMemoria():
             self.memoria[i] = metadatos[contador]
             contador+=1
 
-        fecha = time.time()
+        fecha = int(time.time())
 
-        encabezadoPag = struct.pack("=ff", fecha, fecha)
+        encabezadoPag = struct.pack("=II", fecha, fecha)
 
         #Escribir el encabezado de una pagina en datos(fechaConsulta/fechaCreacion)
         contador = 0
         for i in range(posicionDatos-7, posicionDatos+1):
-            #print(i)
             self.memoria[i] = encabezadoPag[contador]
             contador+= 1
 
@@ -149,18 +158,20 @@ class NodoMemoria():
                     bytesTemp[n] = self.memoria[j+1+n]
                 break
 
-        metaTemp = struct.unpack('II', bytesTemp)
+        metaTemp = struct.unpack('=II', bytesTemp)
         tamanoPagina = metaTemp[0]
         posicionPagina = metaTemp[1]
 
             
         data = bytearray(tamanoPagina)
         for d in range(tamanoPagina):
-            data[d] = self.memoria[posicionPagina-8-tamanoPagina+d]
-        now = time.time()
-        fecha = struct.pack("=f", now)
+            data[d] = self.memoria[posicionPagina-7-tamanoPagina+d]
+        
+        now = int(time.time())
+        fecha = struct.pack("=I", now)
         for m in range(4):
             self.memoria[(posicionPagina-7)+m]=fecha[m]
+        
         return data
 
     def leer_metadatos_paginas_guardadas(self):
@@ -233,7 +244,6 @@ class threadsInterface(threading.Thread):
                         self.nodoMem.guardar_pagina(page_size, id_page, data)
                         self.tamanoRestante = self.tamanoRestante - page_size - 17
                         paquete = manepack.paquete_respuesta_guardar_ID_NM(2, id_page, self.tamanoRestante)
-                        print(paquete)
                         conn.sendall(paquete)
 
                     elif(data[0] == 1):
@@ -250,20 +260,19 @@ class threadsInterface(threading.Thread):
 
             print("Si desea ver el contenido actual del nodo de memoria presione la tecla N")
             while not self.kill:
-                try:
-                    if keyboard.is_pressed('n'):
-                        print(" Mostrando contenido...")
-                        time.sleep(0.5)
+                
+                if keyboard.is_pressed('n'):
+                    print(" Mostrando contenido...")
+                    time.sleep(0.5)
+                    print()
+                    listaMetadatos = self.nodoMem.leer_metadatos_paginas_guardadas()
+                    print("ID Pagina\tTamano\tPosicion\tFecha Consulta\tFecha Creacion")
+                    print("---------\t------\t--------\t--------------\t--------------")
+                    for i in listaMetadatos:
+                        print("\t%d\t%d\t%d\t%s\t%s" %(i[0],i[1],i[2],time.ctime(i[3]),time.ctime(i[4])))
                         print()
-                        listaMetadatos = self.nodoMem.leer_metadatos_paginas_guardadas()
-                        print("ID Pagina\t\tTamano\t\tFecha Consulta\t\tFecha Creacion")
-                        for i in listaMetadatos:
-                            print("%d\t%d\t%s\t%s" %(i[0],i[1],time.ctime(i[2]),time.ctime(i[3])))
-                            print()
-                        print()
-                except:
-                    print("Ocurrio un error al imprimir los datos")
-
+                    print()
+                
 
 def threads_alive(Threads):
     for thread in Threads:
