@@ -11,23 +11,6 @@ class AdministradorMem:
     def __init__(self):
         self.memoriaPrincipal = bytearray(160000)
 
-        #Conexion con interfaz distribuida
-        self.puertoID = 2000
-        self.hostID = "10.1.137.102"
-        self.socketID = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        conexion = False
-
-        while not conexion:
-            try:
-                self.socketID.connect((self.hostID,self.puertoID))
-                print("Conexion con interfaz distribuida establecida")
-                conexion = True
-            except:
-                print("No se pudo conectar con la interfaz distribuida")
-                print("Intentando nuevamente...")
-                time.sleep(2)
-
         self.contadorPaginas = 0
         self.tablaPaginas = []
         self.colaPaginas = []
@@ -73,17 +56,29 @@ class AdministradorMem:
 
         #pagEnBytes = struct.pack('B',numPagina)
 
-
         paquete_pagina = manepack.paquete_para_guardar(0,numPagina,tamanoBytes,busDatos)
 
+        #conexion = False
+
+        #while not conexion:
+            #try:
+        socketID = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        socketID.connect(("10.1.137.52", 2000))
+                #print("Conexion con interfaz distribuida establecida")
+                #conexion = True
+            #except:
+                #print("No se pudo conectar con la interfaz distribuida")
+                #print("Intentando nuevamente...")
+                #time.sleep(1)
 
         pagina_no_recibida = True;
 
         while(pagina_no_recibida):
-            self.socketID.send(paquete_pagina)
+            socketID.send(paquete_pagina)
             print("Enviada")
             paquete_respuesta = bytearray()
-            paq = self.socketID.recv(1024)
+            paq = socketID.recv(1024)
             print(type(paq))
             paquete_respuesta += paq
 
@@ -98,6 +93,7 @@ class AdministradorMem:
         self.tablaPaginas[numPagina] = -1
         self.colaPaginas.remove(numPagina)
         self.vaciarPagina(tamano,posicion)
+        socketID.close()
 
 
     def cargarPagMemSecundaria(self,tamano,numPagina,posicion):
@@ -112,18 +108,30 @@ class AdministradorMem:
 
         paquete_pagina = manepack.paquete_para_leer(1,numPagina)
 
+        #while not conexion:
+            #try:
+        socketID = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        socketID.connect(("10.1.137.52", 2000))
+                #print("Conexion con interfaz distribuida establecida")
+                #conexion = True
+            #except:
+                #print("No se pudo conectar con la interfaz distribuida")
+                #print("Intentando nuevamente...")
+                #time.sleep(1)
+
 
         pagina_no_leida = True
 
         while(pagina_no_leida):
 
-            self.socketID.sendall(paquete_pagina)
+            socketID.sendall(paquete_pagina)
 
             paquete_respuesta = bytearray()
 
             time.sleep(3)
 
-            pack = self.socketID.recv(691208)
+            pack = socketID.recv(691208)
 
             print(type(pack))
             paquete_respuesta += pack
@@ -132,6 +140,8 @@ class AdministradorMem:
 
             if(busDatos !=1):
                 pagina_no_leida = False
+
+        socketID.close()
 
         longitud = 0
         if (tamano == 0):

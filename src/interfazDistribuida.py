@@ -7,6 +7,7 @@ import uuid
 import threading
 import select
 import manejadorPaquetes as manepack
+from subprocess import call
 
 class interfazDistribuida:
 
@@ -28,8 +29,8 @@ class interfazDistribuida:
 		self.active = False
 		self.status = False
 		self.startChampions = True
-		self.gloabal_ip = "10.1.138.40"
-		self.my_broadcast_port = 5555
+		self.gloabal_ip = "10.1.137.52"
+		self.my_broadcast_port = 6666
 		self.my_tcp_port = 3114
 		self.mac_addres_in_bytes = uuid.getnode().to_bytes(6, 'little')
 		self.raw_mac_address = uuid.getnode()
@@ -288,11 +289,14 @@ class threadsDistributedInterface(threading.Thread):
 
 					# Me apropio de la IP global para la interfaz
 
-					#print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
-					#os.system('sudo ifconfig eth0 down')
-					#os.system('sudo ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-					#os.system('sudo ifconfig eth0 up')
+					print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
+					# os.system('sudo ifconfig eno1 down')
+					# os.system('sudo ifconfig eno1 ' + str(self.disInter.gloabal_ip))
+					# os.system('sudo ifconfig eno1 up')
 					#os.system('Flamingo2019')
+
+					call(["sudo", "ip", "addr", "flush", "dev", "eno1"])
+					call(["ip", "a", "add", "10.1.137.52/255.255.0.0", "dev", "eno1"])
 
 					self.disInter.active = True
 					break
@@ -302,7 +306,7 @@ class threadsDistributedInterface(threading.Thread):
 					if not self.disInter.status:
 
 						paquete = manepack.paquete_broadcast_quieroSer_ID_ID(0, self.disInter.mac_addres_in_bytes, self.disInter.round)
-						interBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+						interBroad.sendto(paquete, ('10.1.255.255', self.disInter.my_broadcast_port))
 						print ("Mensaje quiero ser enviado, con ronda: " + str(self.disInter.round))
 
 						paquete_respuesta = []
@@ -331,11 +335,14 @@ class threadsDistributedInterface(threading.Thread):
 
 								# Me apropio de la IP global para la interfaz
 
-								#print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
-								#os.system('sudo ifconfig eth0 down')
-								#os.system('sudo ifconfig eth0 ' + str(self.disInter.gloabal_ip))
-								#os.system('sudo ifconfig eth0 up')
+								print ("Me apropio de la IP: " + str(self.disInter.gloabal_ip))
+								# os.system('sudo ifconfig eno1 down')
+								# os.system('sudo ifconfig eno1 ' + str(self.disInter.gloabal_ip))
+								# os.system('sudo ifconfig eno1 up')
 								#os.system('Flamingo2019')
+
+								call(["sudo", "ip", "addr", "flush", "dev", "eno1"])
+								call(["ip", "a", "add", "10.1.137.52/255.255.0.0", "dev", "eno1"])
 
 								self.disInter.active = True
 								break
@@ -434,11 +441,11 @@ class threadsDistributedInterface(threading.Thread):
 			activeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 			activeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
-			activeBroad.bind(("", 44444))
+			activeBroad.bind(("", self.disInter.my_broadcast_port))
 
 			dump1, dump2 = self.disInter.create_dump(0)
 			paquete = manepack.paquete_broadcast_soyActivo_ID_ID(1, self.disInter.pageCounter, self.disInter.nodeCounter, dump1, dump2)
-			activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+			activeBroad.sendto(paquete, ('10.1.255.255', self.disInter.my_broadcast_port))
 
 			print("Paquete soy activo enviado")
 			time.sleep(2)
@@ -454,13 +461,13 @@ class threadsDistributedInterface(threading.Thread):
 					dump1, dump2 = self.disInter.create_dump(1)
 					paquete = manepack.paquete_broadcast_keepAlive_ID_ID(2, row1, row2, dump1, dump2)
 
-					activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+					activeBroad.sendto(paquete, ('10.1.255.255', self.disInter.my_broadcast_port))
 					print ("Paquete keep alive con cambios enviado")
 
 				else:
 
 					paquete = manepack.paquete_broadcast_keepAlive_ID_ID(2, 0, 0, 0, 0)
-					activeBroad.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+					activeBroad.sendto(paquete, ('10.1.255.255', self.disInter.my_broadcast_port))
 					print ("Paquete keep alive sin cambios enviado")
 
 				time.sleep(2)
@@ -495,7 +502,7 @@ class threadsDistributedInterface(threading.Thread):
 
 						dump1, dump2 = self.disInter.create_dump(0)
 						paquete = manepack.paquete_broadcast_soyActivo_ID_ID(1, self.disInter.pageCounter, self.disInter.nodeCounter, dump1, dump2)
-						activeBroadListen.sendto(paquete, ('<broadcast>', self.disInter.my_broadcast_port))
+						activeBroadListen.sendto(paquete, ('10.1.255.255', self.disInter.my_broadcast_port))
 
 			activeBroadListen.close()
 
@@ -507,7 +514,7 @@ class threadsDistributedInterface(threading.Thread):
 			nodeBroad = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 			nodeBroad.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-			nodeBroad.bind(("", 6000))
+			nodeBroad.bind(("", 5000))
 
 			while not self.kill:
 
@@ -552,10 +559,10 @@ class threadsDistributedInterface(threading.Thread):
 
 				memoryListener.bind((self.disInter.gloabal_ip, 2000))
 
-				memoryListener.listen()
-				conn, addr = memoryListener.accept()
-
 				while not self.kill:
+
+					memoryListener.listen()
+					conn, addr = memoryListener.accept()
 
 					#with conn
 					paquete = conn.recv(691208)
