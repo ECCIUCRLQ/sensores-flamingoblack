@@ -72,11 +72,8 @@ class NodoMemoria():
 
         metadatos.append(tamano_posicion[0])   #Entero de tamano de pagina
         #En [0] por que unpack desempaca como tupla
-
         posicionDatos = tamano_posicion[1]
-	
-	metadatos.append(posicionDatos)
-
+        metadatos.append(posicionDatos)
         fechaCons_fechaCrea = struct.unpack("=ff", self.memoria[posicionDatos-7])
 
         metadatos.append(fechaCons_fechaCrea[0]) #Float de Fecha consulta
@@ -105,14 +102,14 @@ class NodoMemoria():
         #Escribir el encabezado de una pagina en datos(fechaConsulta/fechaCreacion)
         contador = 0
         for i in range(posicionDatos-7, posicionDatos+1):
-            print(i)
+            #print(i)
             self.memoria[i] = encabezadoPag[contador]
             contador+= 1
 
         #Escribir los datos de una pagina
         contador = 0
         for i in range((posicionDatos-7)-tamano, posicionDatos-7):
-            print(i)
+            #print(i)
             self.memoria[i] = datos[contador]
             contador += 1
 
@@ -129,7 +126,7 @@ class NodoMemoria():
         for i in range (4,8):
             self.memoria[i] = posDataBytes[i-4]
 
-        print("Pagina de tamano " , tamano ," guardada exitosamente")
+        print("Pagina ", id_pagina, " de tamano " , tamano ," guardada exitosamente")
 
 
 
@@ -142,33 +139,35 @@ class NodoMemoria():
     """
     def leer_pagina(self, id_pagina):
         offsetMeta = self.leerUnDato(0,0)
-        bytesTemp2 = bytearray(8)
+        bytesTemp = bytearray(8)
         tamanoPagina = 0
         posicionPagina = 0
 
         for j in range(8, offsetMeta, 9):
             if self.memoria[j] == id_pagina:
                 for n in range (8):
-                    bytesTemp2[n] = self.memoria[j+1+n]
-            metaTemp = struct.unpack('II', bytesTemp)
-            tamanoPagina = metaTemp[0]
-            posicionPagina = metaTemp[1]
+                    bytesTemp[n] = self.memoria[j+1+n]
+                break
 
-            break
+        metaTemp = struct.unpack('II', bytesTemp)
+        tamanoPagina = metaTemp[0]
+        posicionPagina = metaTemp[1]
+
+            
         data = bytearray(tamanoPagina)
         for d in range(tamanoPagina):
             data[d] = self.memoria[posicionPagina-8-tamanoPagina+d]
         now = time.time()
         fecha = struct.pack("=f", now)
         for m in range(4):
-            memoria[(posicionPagina-7)+m]=fecha[m]
+            self.memoria[(posicionPagina-7)+m]=fecha[m]
         return data
 
     def leer_metadatos_paginas_guardadas(self):
         posicionMetadatos = self.leerUnDato(0,0)
         listaMetadatos = []
         for i in range(8, posicionMetadatos, 9):
-            metadatos = leerMetadatos(i)
+            metadatos = self.leerMetadatos(i)
             listaMetadatos.append(metadatos)
 
         return listaMetadatos
@@ -181,9 +180,9 @@ class threadsInterface(threading.Thread):
 
         threading.Thread.__init__(self)
 
-        self.puerto_broad_ID = 5555
+        self.puerto_broad_ID = 5000
         self.puerto_tcp_ID = 3114
-        self.hostID = "127.0.0.1"
+        self.hostID = "10.1.137.106"
         self.name = name
         self.kill = False
         self.nodoMem = nodoMemoria
@@ -238,9 +237,9 @@ class threadsInterface(threading.Thread):
                         conn.sendall(paquete)
 
                     elif(data[0] == 1):
-                        id_pagina = manepack.desempacar_paquete_guardar(data)
-                        pagina = self.nodoMem.leer_pagina(self, id_pagina)
-                        paquete = self.nodoMem.paquete_respuesta_leer(3, id_pagina, pagina)
+                        id_pagina = manepack.desempacar_paquete_pedir_ID_NM(data)
+                        pagina = self.nodoMem.leer_pagina(id_pagina)
+                        paquete = manepack.paquete_respuesta_leer(3, id_pagina, pagina)
                         conn.sendall(paquete)
 
                     elif(data[0] == 2):
