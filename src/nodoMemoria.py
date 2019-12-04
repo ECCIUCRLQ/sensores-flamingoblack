@@ -49,9 +49,9 @@ class NodoMemoria():
 
         datoReal = 0
         if(formato == 0):
-            datoReal = struct.unpack('I', datoBytes)
+            datoReal = struct.unpack('=I', datoBytes)
         elif(formato == 1):
-            datoReal = struct.unpack('i', datoBytes)
+            datoReal = struct.unpack('=i', datoBytes)
 
         return datoReal[0]
 
@@ -74,12 +74,14 @@ class NodoMemoria():
         #En [0] por que unpack desempaca como tupla
 
         posicionDatos = tamano_posicion[1]
+	
+	metadatos.append(posicionDatos)
 
         fechaCons_fechaCrea = struct.unpack("=ff", self.memoria[posicionDatos-7])
 
         metadatos.append(fechaCons_fechaCrea[0]) #Float de Fecha consulta
 
-        metadatos.append(fechaCons_fechaCrea[1]) #Float de Fecha creacion
+        metadatos.append(fechaCons_fechaCrea[1]) #Float de Fecha creacion 
 
         return metadatos
 
