@@ -151,8 +151,8 @@ def desempacar_paquete_guardar(paquete):
         return id_page, page_size[0], data
 
 
-"""
-def desempacar_paquete_guardar(paquete):
+
+def desempacar_paquete_pedir_ID_NM(paquete):
 
     op_code_res = paquete[0]
     id_page = paquete[1]
@@ -163,7 +163,7 @@ def desempacar_paquete_guardar(paquete):
 
     else:
         return id_page
-"""
+
 # ------------------------
 # Método para ML cuando recibe la respuesta al request de guardar que realizó
 # Retorna 0 cuando se guarda exitosamente, 1 cuando hubo problema
